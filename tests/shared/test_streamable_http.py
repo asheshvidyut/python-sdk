@@ -589,6 +589,7 @@ def test_session_id_pattern():
 
 def test_streamable_http_transport_init_validation():
     """Test that StreamableHTTPServerTransport validates session ID on init."""
+    
     # Valid session ID should initialize without errors
     valid_transport = StreamableHTTPServerTransport(mcp_session_id="valid-id")
     assert valid_transport.mcp_session_id == "valid-id"
