@@ -1,6 +1,4 @@
-import sys
 
-import setuptools
 from setuptools.command.build_py import build_py as _build_py
 
 # The content you want to write into the file
@@ -18,7 +16,7 @@ class build_py(_build_py):
         self.mkpath(self.build_lib)
 
         # Write the new content to the file
-        with open(TARGET_FILE, "r") as f:
+        with open(TARGET_FILE) as f:
             content = f.read()
 
         if old_import not in content:

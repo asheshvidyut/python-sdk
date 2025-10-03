@@ -1,17 +1,17 @@
 import asyncio
-import socket
-from collections.abc import Generator
 import base64
 import json
+import socket
+from collections.abc import Generator
 from io import BytesIO
 
 import pytest
 
+from mcp import types
 from mcp.client.grpc_transport_session import GRPCTransportSession
-from mcp.shared.exceptions import McpError
 from mcp.server.fastmcp.server import FastMCP
 from mcp.server.grpc import create_mcp_grpc_server
-from mcp import types
+from mcp.shared.exceptions import McpError
 
 
 def setup_test_server(port: int) -> FastMCP:

@@ -1,13 +1,13 @@
 import asyncio
-import socket
-from collections.abc import Generator
 import json
 import os
+import socket
+from collections.abc import Generator
 
 import grpc
 import pytest
-from google.protobuf import json_format
-from google.protobuf import struct_pb2
+from google.protobuf import json_format, struct_pb2
+
 from mcp import types
 from mcp.client.grpc_transport_session import GRPCTransportSession
 from mcp.proto import mcp_pb2, mcp_pb2_grpc

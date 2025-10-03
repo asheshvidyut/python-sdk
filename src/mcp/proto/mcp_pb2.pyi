@@ -1,13 +1,14 @@
 import datetime
+from collections.abc import Iterable as _Iterable
+from collections.abc import Mapping as _Mapping
+from typing import ClassVar as _ClassVar
 
+from google.protobuf import descriptor as _descriptor
 from google.protobuf import duration_pb2 as _duration_pb2
+from google.protobuf import message as _message
 from google.protobuf import struct_pb2 as _struct_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
-from google.protobuf import descriptor as _descriptor
-from google.protobuf import message as _message
-from collections.abc import Iterable as _Iterable, Mapping as _Mapping
-from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -63,10 +64,10 @@ class ProgressNotification(_message.Message):
     message: str
     def __init__(
         self,
-        progress_token: _Optional[str] = ...,
-        progress: _Optional[float] = ...,
-        total: _Optional[float] = ...,
-        message: _Optional[str] = ...,
+        progress_token: str | None = ...,
+        progress: float | None = ...,
+        total: float | None = ...,
+        message: str | None = ...,
     ) -> None: ...
 
 class LogMessage(_message.Message):
@@ -79,9 +80,9 @@ class LogMessage(_message.Message):
     data: _struct_pb2.Value
     def __init__(
         self,
-        log_level: _Optional[_Union[LogLevel, str]] = ...,
-        logger: _Optional[str] = ...,
-        data: _Optional[_Union[_struct_pb2.Value, _Mapping]] = ...,
+        log_level: LogLevel | str | None = ...,
+        logger: str | None = ...,
+        data: _struct_pb2.Value | _Mapping | None = ...,
     ) -> None: ...
 
 class RequestFields(_message.Message):
@@ -116,15 +117,15 @@ class RequestFields(_message.Message):
     elicit_result: ElicitResult
     def __init__(
         self,
-        protocol_version: _Optional[_Union[ProtocolVersion, str]] = ...,
-        metadata: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ...,
-        cursor: _Optional[str] = ...,
-        progress: _Optional[_Union[ProgressNotification, _Mapping]] = ...,
-        last_event_id: _Optional[str] = ...,
-        set_log_level: _Optional[_Union[LogLevel, str]] = ...,
-        sampling_create_message_result: _Optional[_Union[SamplingCreateMessageResult, _Mapping]] = ...,
-        root_list_result: _Optional[_Union[ListRootsResult, _Mapping]] = ...,
-        elicit_result: _Optional[_Union[ElicitResult, _Mapping]] = ...,
+        protocol_version: ProtocolVersion | str | None = ...,
+        metadata: _struct_pb2.Struct | _Mapping | None = ...,
+        cursor: str | None = ...,
+        progress: ProgressNotification | _Mapping | None = ...,
+        last_event_id: str | None = ...,
+        set_log_level: LogLevel | str | None = ...,
+        sampling_create_message_result: SamplingCreateMessageResult | _Mapping | None = ...,
+        root_list_result: ListRootsResult | _Mapping | None = ...,
+        elicit_result: ElicitResult | _Mapping | None = ...,
     ) -> None: ...
 
 class ResponseFields(_message.Message):
@@ -165,17 +166,17 @@ class ResponseFields(_message.Message):
     elicit_request: ElicitRequest
     def __init__(
         self,
-        protocol_version: _Optional[_Union[ProtocolVersion, str]] = ...,
-        instructions: _Optional[str] = ...,
-        event_id: _Optional[str] = ...,
-        metadata: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ...,
-        next_cursor: _Optional[str] = ...,
-        progress: _Optional[_Union[ProgressNotification, _Mapping]] = ...,
-        log_message: _Optional[_Union[LogMessage, _Mapping]] = ...,
-        sampling_create_message: _Optional[_Union[SamplingCreateMessageRequest, _Mapping]] = ...,
-        list_roots_request: _Optional[_Union[ListRootsRequest, _Mapping]] = ...,
+        protocol_version: ProtocolVersion | str | None = ...,
+        instructions: str | None = ...,
+        event_id: str | None = ...,
+        metadata: _struct_pb2.Struct | _Mapping | None = ...,
+        next_cursor: str | None = ...,
+        progress: ProgressNotification | _Mapping | None = ...,
+        log_message: LogMessage | _Mapping | None = ...,
+        sampling_create_message: SamplingCreateMessageRequest | _Mapping | None = ...,
+        list_roots_request: ListRootsRequest | _Mapping | None = ...,
         notify_on_root_list_update: bool = ...,
-        elicit_request: _Optional[_Union[ElicitRequest, _Mapping]] = ...,
+        elicit_request: ElicitRequest | _Mapping | None = ...,
     ) -> None: ...
 
 class Annotations(_message.Message):
@@ -185,7 +186,7 @@ class Annotations(_message.Message):
     audience: _containers.RepeatedScalarFieldContainer[Role]
     priority: float
     def __init__(
-        self, audience: _Optional[_Iterable[_Union[Role, str]]] = ..., priority: _Optional[float] = ...
+        self, audience: _Iterable[Role | str] | None = ..., priority: float | None = ...
     ) -> None: ...
 
 class TextContent(_message.Message):
@@ -195,7 +196,7 @@ class TextContent(_message.Message):
     text: str
     annotations: Annotations
     def __init__(
-        self, text: _Optional[str] = ..., annotations: _Optional[_Union[Annotations, _Mapping]] = ...
+        self, text: str | None = ..., annotations: Annotations | _Mapping | None = ...
     ) -> None: ...
 
 class ImageContent(_message.Message):
@@ -208,9 +209,9 @@ class ImageContent(_message.Message):
     annotations: Annotations
     def __init__(
         self,
-        data: _Optional[bytes] = ...,
-        mime_type: _Optional[str] = ...,
-        annotations: _Optional[_Union[Annotations, _Mapping]] = ...,
+        data: bytes | None = ...,
+        mime_type: str | None = ...,
+        annotations: Annotations | _Mapping | None = ...,
     ) -> None: ...
 
 class AudioContent(_message.Message):
@@ -223,9 +224,9 @@ class AudioContent(_message.Message):
     annotations: Annotations
     def __init__(
         self,
-        data: _Optional[bytes] = ...,
-        mime_type: _Optional[str] = ...,
-        annotations: _Optional[_Union[Annotations, _Mapping]] = ...,
+        data: bytes | None = ...,
+        mime_type: str | None = ...,
+        annotations: Annotations | _Mapping | None = ...,
     ) -> None: ...
 
 class ListRootsRequest(_message.Message):
@@ -240,11 +241,11 @@ class ListRootsResult(_message.Message):
         NAME_FIELD_NUMBER: _ClassVar[int]
         uri: str
         name: str
-        def __init__(self, uri: _Optional[str] = ..., name: _Optional[str] = ...) -> None: ...
+        def __init__(self, uri: str | None = ..., name: str | None = ...) -> None: ...
 
     ROOTS_FIELD_NUMBER: _ClassVar[int]
     roots: _containers.RepeatedCompositeFieldContainer[ListRootsResult.Root]
-    def __init__(self, roots: _Optional[_Iterable[_Union[ListRootsResult.Root, _Mapping]]] = ...) -> None: ...
+    def __init__(self, roots: _Iterable[ListRootsResult.Root | _Mapping] | None = ...) -> None: ...
 
 class SamplingMessage(_message.Message):
     __slots__ = ("role", "text", "image", "audio")
@@ -258,10 +259,10 @@ class SamplingMessage(_message.Message):
     audio: AudioContent
     def __init__(
         self,
-        role: _Optional[_Union[Role, str]] = ...,
-        text: _Optional[_Union[TextContent, _Mapping]] = ...,
-        image: _Optional[_Union[ImageContent, _Mapping]] = ...,
-        audio: _Optional[_Union[AudioContent, _Mapping]] = ...,
+        role: Role | str | None = ...,
+        text: TextContent | _Mapping | None = ...,
+        image: ImageContent | _Mapping | None = ...,
+        audio: AudioContent | _Mapping | None = ...,
     ) -> None: ...
 
 class SamplingCreateMessageRequest(_message.Message):
@@ -289,7 +290,7 @@ class SamplingCreateMessageRequest(_message.Message):
             __slots__ = ("name",)
             NAME_FIELD_NUMBER: _ClassVar[int]
             name: str
-            def __init__(self, name: _Optional[str] = ...) -> None: ...
+            def __init__(self, name: str | None = ...) -> None: ...
 
         HINTS_FIELD_NUMBER: _ClassVar[int]
         INTELLIGENCE_PRIORITY_FIELD_NUMBER: _ClassVar[int]
@@ -301,12 +302,10 @@ class SamplingCreateMessageRequest(_message.Message):
         cost_priority: float
         def __init__(
             self,
-            hints: _Optional[
-                _Iterable[_Union[SamplingCreateMessageRequest.ModelPreferences.ModelHint, _Mapping]]
-            ] = ...,
-            intelligence_priority: _Optional[float] = ...,
-            speed_priority: _Optional[float] = ...,
-            cost_priority: _Optional[float] = ...,
+            hints: _Iterable[SamplingCreateMessageRequest.ModelPreferences.ModelHint | _Mapping] | None = ...,
+            intelligence_priority: float | None = ...,
+            speed_priority: float | None = ...,
+            cost_priority: float | None = ...,
         ) -> None: ...
 
     MESSAGES_FIELD_NUMBER: _ClassVar[int]
@@ -325,13 +324,13 @@ class SamplingCreateMessageRequest(_message.Message):
     stop_sequence: _containers.RepeatedScalarFieldContainer[str]
     def __init__(
         self,
-        messages: _Optional[_Iterable[_Union[SamplingMessage, _Mapping]]] = ...,
-        model_preferences: _Optional[_Union[SamplingCreateMessageRequest.ModelPreferences, _Mapping]] = ...,
-        system_prompt: _Optional[str] = ...,
-        include_context: _Optional[_Union[SamplingCreateMessageRequest.IncludeContext, str]] = ...,
-        temperature: _Optional[float] = ...,
-        max_tokens: _Optional[int] = ...,
-        stop_sequence: _Optional[_Iterable[str]] = ...,
+        messages: _Iterable[SamplingMessage | _Mapping] | None = ...,
+        model_preferences: SamplingCreateMessageRequest.ModelPreferences | _Mapping | None = ...,
+        system_prompt: str | None = ...,
+        include_context: SamplingCreateMessageRequest.IncludeContext | str | None = ...,
+        temperature: float | None = ...,
+        max_tokens: int | None = ...,
+        stop_sequence: _Iterable[str] | None = ...,
     ) -> None: ...
 
 class SamplingCreateMessageResult(_message.Message):
@@ -344,9 +343,9 @@ class SamplingCreateMessageResult(_message.Message):
     stop_reason: str
     def __init__(
         self,
-        message: _Optional[_Union[SamplingMessage, _Mapping]] = ...,
-        model: _Optional[str] = ...,
-        stop_reason: _Optional[str] = ...,
+        message: SamplingMessage | _Mapping | None = ...,
+        model: str | None = ...,
+        stop_reason: str | None = ...,
     ) -> None: ...
 
 class PrimitiveSchemaDefinition(_message.Message):
@@ -378,11 +377,11 @@ class PrimitiveSchemaDefinition(_message.Message):
         format: PrimitiveSchemaDefinition.StringSchema.Format
         def __init__(
             self,
-            title: _Optional[str] = ...,
-            description: _Optional[str] = ...,
-            min_length: _Optional[int] = ...,
-            max_length: _Optional[int] = ...,
-            format: _Optional[_Union[PrimitiveSchemaDefinition.StringSchema.Format, str]] = ...,
+            title: str | None = ...,
+            description: str | None = ...,
+            min_length: int | None = ...,
+            max_length: int | None = ...,
+            format: PrimitiveSchemaDefinition.StringSchema.Format | str | None = ...,
         ) -> None: ...
 
     class NumberSchema(_message.Message):
@@ -397,10 +396,10 @@ class PrimitiveSchemaDefinition(_message.Message):
         maximum: int
         def __init__(
             self,
-            title: _Optional[str] = ...,
-            description: _Optional[str] = ...,
-            minimum: _Optional[int] = ...,
-            maximum: _Optional[int] = ...,
+            title: str | None = ...,
+            description: str | None = ...,
+            minimum: int | None = ...,
+            maximum: int | None = ...,
         ) -> None: ...
 
     class BooleanSchema(_message.Message):
@@ -412,7 +411,7 @@ class PrimitiveSchemaDefinition(_message.Message):
         description: str
         default: bool
         def __init__(
-            self, title: _Optional[str] = ..., description: _Optional[str] = ..., default: bool = ...
+            self, title: str | None = ..., description: str | None = ..., default: bool = ...
         ) -> None: ...
 
     class EnumSchema(_message.Message):
@@ -427,10 +426,10 @@ class PrimitiveSchemaDefinition(_message.Message):
         enum_names: _containers.RepeatedScalarFieldContainer[str]
         def __init__(
             self,
-            title: _Optional[str] = ...,
-            description: _Optional[str] = ...,
-            enum_list: _Optional[_Iterable[str]] = ...,
-            enum_names: _Optional[_Iterable[str]] = ...,
+            title: str | None = ...,
+            description: str | None = ...,
+            enum_list: _Iterable[str] | None = ...,
+            enum_names: _Iterable[str] | None = ...,
         ) -> None: ...
 
     STRING_SCHEMA_FIELD_NUMBER: _ClassVar[int]
@@ -443,10 +442,10 @@ class PrimitiveSchemaDefinition(_message.Message):
     enum_schema: PrimitiveSchemaDefinition.EnumSchema
     def __init__(
         self,
-        string_schema: _Optional[_Union[PrimitiveSchemaDefinition.StringSchema, _Mapping]] = ...,
-        number_schema: _Optional[_Union[PrimitiveSchemaDefinition.NumberSchema, _Mapping]] = ...,
-        boolean_schema: _Optional[_Union[PrimitiveSchemaDefinition.BooleanSchema, _Mapping]] = ...,
-        enum_schema: _Optional[_Union[PrimitiveSchemaDefinition.EnumSchema, _Mapping]] = ...,
+        string_schema: PrimitiveSchemaDefinition.StringSchema | _Mapping | None = ...,
+        number_schema: PrimitiveSchemaDefinition.NumberSchema | _Mapping | None = ...,
+        boolean_schema: PrimitiveSchemaDefinition.BooleanSchema | _Mapping | None = ...,
+        enum_schema: PrimitiveSchemaDefinition.EnumSchema | _Mapping | None = ...,
     ) -> None: ...
 
 class ElicitRequest(_message.Message):
@@ -458,7 +457,7 @@ class ElicitRequest(_message.Message):
         key: str
         value: PrimitiveSchemaDefinition
         def __init__(
-            self, key: _Optional[str] = ..., value: _Optional[_Union[PrimitiveSchemaDefinition, _Mapping]] = ...
+            self, key: str | None = ..., value: PrimitiveSchemaDefinition | _Mapping | None = ...
         ) -> None: ...
 
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
@@ -469,9 +468,9 @@ class ElicitRequest(_message.Message):
     required_fields: _containers.RepeatedScalarFieldContainer[str]
     def __init__(
         self,
-        message: _Optional[str] = ...,
-        requested_schema: _Optional[_Mapping[str, PrimitiveSchemaDefinition]] = ...,
-        required_fields: _Optional[_Iterable[str]] = ...,
+        message: str | None = ...,
+        requested_schema: _Mapping[str, PrimitiveSchemaDefinition] | None = ...,
+        required_fields: _Iterable[str] | None = ...,
     ) -> None: ...
 
 class ElicitResult(_message.Message):
@@ -493,8 +492,8 @@ class ElicitResult(_message.Message):
     content: _struct_pb2.Struct
     def __init__(
         self,
-        type: _Optional[_Union[ElicitResult.Type, str]] = ...,
-        content: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ...,
+        type: ElicitResult.Type | str | None = ...,
+        content: _struct_pb2.Struct | _Mapping | None = ...,
     ) -> None: ...
 
 class Resource(_message.Message):
@@ -515,20 +514,20 @@ class Resource(_message.Message):
     size: int
     def __init__(
         self,
-        uri: _Optional[str] = ...,
-        name: _Optional[str] = ...,
-        title: _Optional[str] = ...,
-        description: _Optional[str] = ...,
-        mime_type: _Optional[str] = ...,
-        annotations: _Optional[_Union[Annotations, _Mapping]] = ...,
-        size: _Optional[int] = ...,
+        uri: str | None = ...,
+        name: str | None = ...,
+        title: str | None = ...,
+        description: str | None = ...,
+        mime_type: str | None = ...,
+        annotations: Annotations | _Mapping | None = ...,
+        size: int | None = ...,
     ) -> None: ...
 
 class ListResourcesRequest(_message.Message):
     __slots__ = ("common",)
     COMMON_FIELD_NUMBER: _ClassVar[int]
     common: RequestFields
-    def __init__(self, common: _Optional[_Union[RequestFields, _Mapping]] = ...) -> None: ...
+    def __init__(self, common: RequestFields | _Mapping | None = ...) -> None: ...
 
 class ListResourcesResponse(_message.Message):
     __slots__ = ("common", "resources", "ttl")
@@ -540,9 +539,9 @@ class ListResourcesResponse(_message.Message):
     ttl: _duration_pb2.Duration
     def __init__(
         self,
-        common: _Optional[_Union[ResponseFields, _Mapping]] = ...,
-        resources: _Optional[_Iterable[_Union[Resource, _Mapping]]] = ...,
-        ttl: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ...,
+        common: ResponseFields | _Mapping | None = ...,
+        resources: _Iterable[Resource | _Mapping] | None = ...,
+        ttl: datetime.timedelta | _duration_pb2.Duration | _Mapping | None = ...,
     ) -> None: ...
 
 class ResourceContents(_message.Message):
@@ -557,10 +556,10 @@ class ResourceContents(_message.Message):
     blob: bytes
     def __init__(
         self,
-        uri: _Optional[str] = ...,
-        mime_type: _Optional[str] = ...,
-        text: _Optional[str] = ...,
-        blob: _Optional[bytes] = ...,
+        uri: str | None = ...,
+        mime_type: str | None = ...,
+        text: str | None = ...,
+        blob: bytes | None = ...,
     ) -> None: ...
 
 class ReadResourceRequest(_message.Message):
@@ -569,7 +568,7 @@ class ReadResourceRequest(_message.Message):
     URI_FIELD_NUMBER: _ClassVar[int]
     common: RequestFields
     uri: str
-    def __init__(self, common: _Optional[_Union[RequestFields, _Mapping]] = ..., uri: _Optional[str] = ...) -> None: ...
+    def __init__(self, common: RequestFields | _Mapping | None = ..., uri: str | None = ...) -> None: ...
 
 class ReadResourceResponse(_message.Message):
     __slots__ = ("common", "resource")
@@ -579,8 +578,8 @@ class ReadResourceResponse(_message.Message):
     resource: ResourceContents
     def __init__(
         self,
-        common: _Optional[_Union[ResponseFields, _Mapping]] = ...,
-        resource: _Optional[_Union[ResourceContents, _Mapping]] = ...,
+        common: ResponseFields | _Mapping | None = ...,
+        resource: ResourceContents | _Mapping | None = ...,
     ) -> None: ...
 
 class ResourceTemplate(_message.Message):
@@ -599,19 +598,19 @@ class ResourceTemplate(_message.Message):
     annotations: Annotations
     def __init__(
         self,
-        uri_template: _Optional[str] = ...,
-        name: _Optional[str] = ...,
-        title: _Optional[str] = ...,
-        description: _Optional[str] = ...,
-        mime_type: _Optional[str] = ...,
-        annotations: _Optional[_Union[Annotations, _Mapping]] = ...,
+        uri_template: str | None = ...,
+        name: str | None = ...,
+        title: str | None = ...,
+        description: str | None = ...,
+        mime_type: str | None = ...,
+        annotations: Annotations | _Mapping | None = ...,
     ) -> None: ...
 
 class ListResourceTemplatesRequest(_message.Message):
     __slots__ = ("common",)
     COMMON_FIELD_NUMBER: _ClassVar[int]
     common: RequestFields
-    def __init__(self, common: _Optional[_Union[RequestFields, _Mapping]] = ...) -> None: ...
+    def __init__(self, common: RequestFields | _Mapping | None = ...) -> None: ...
 
 class ListResourceTemplatesResponse(_message.Message):
     __slots__ = ("common", "resource_templates", "ttl")
@@ -623,9 +622,9 @@ class ListResourceTemplatesResponse(_message.Message):
     ttl: _duration_pb2.Duration
     def __init__(
         self,
-        common: _Optional[_Union[ResponseFields, _Mapping]] = ...,
-        resource_templates: _Optional[_Iterable[_Union[ResourceTemplate, _Mapping]]] = ...,
-        ttl: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ...,
+        common: ResponseFields | _Mapping | None = ...,
+        resource_templates: _Iterable[ResourceTemplate | _Mapping] | None = ...,
+        ttl: datetime.timedelta | _duration_pb2.Duration | _Mapping | None = ...,
     ) -> None: ...
 
 class ResourceSubscribeRequest(_message.Message):
@@ -634,13 +633,13 @@ class ResourceSubscribeRequest(_message.Message):
     URI_FIELD_NUMBER: _ClassVar[int]
     common: RequestFields
     uri: str
-    def __init__(self, common: _Optional[_Union[RequestFields, _Mapping]] = ..., uri: _Optional[str] = ...) -> None: ...
+    def __init__(self, common: RequestFields | _Mapping | None = ..., uri: str | None = ...) -> None: ...
 
 class ResourceSubscribeResponse(_message.Message):
     __slots__ = ("common",)
     COMMON_FIELD_NUMBER: _ClassVar[int]
     common: ResponseFields
-    def __init__(self, common: _Optional[_Union[ResponseFields, _Mapping]] = ...) -> None: ...
+    def __init__(self, common: ResponseFields | _Mapping | None = ...) -> None: ...
 
 class Prompt(_message.Message):
     __slots__ = ("name", "title", "description", "arguments")
@@ -656,9 +655,9 @@ class Prompt(_message.Message):
         required: bool
         def __init__(
             self,
-            name: _Optional[str] = ...,
-            title: _Optional[str] = ...,
-            description: _Optional[str] = ...,
+            name: str | None = ...,
+            title: str | None = ...,
+            description: str | None = ...,
             required: bool = ...,
         ) -> None: ...
 
@@ -672,17 +671,17 @@ class Prompt(_message.Message):
     arguments: _containers.RepeatedCompositeFieldContainer[Prompt.Argument]
     def __init__(
         self,
-        name: _Optional[str] = ...,
-        title: _Optional[str] = ...,
-        description: _Optional[str] = ...,
-        arguments: _Optional[_Iterable[_Union[Prompt.Argument, _Mapping]]] = ...,
+        name: str | None = ...,
+        title: str | None = ...,
+        description: str | None = ...,
+        arguments: _Iterable[Prompt.Argument | _Mapping] | None = ...,
     ) -> None: ...
 
 class ListPromptsRequest(_message.Message):
     __slots__ = ("common",)
     COMMON_FIELD_NUMBER: _ClassVar[int]
     common: RequestFields
-    def __init__(self, common: _Optional[_Union[RequestFields, _Mapping]] = ...) -> None: ...
+    def __init__(self, common: RequestFields | _Mapping | None = ...) -> None: ...
 
 class ListPromptsResponse(_message.Message):
     __slots__ = ("common", "prompts", "ttl")
@@ -694,9 +693,9 @@ class ListPromptsResponse(_message.Message):
     ttl: _duration_pb2.Duration
     def __init__(
         self,
-        common: _Optional[_Union[ResponseFields, _Mapping]] = ...,
-        prompts: _Optional[_Iterable[_Union[Prompt, _Mapping]]] = ...,
-        ttl: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ...,
+        common: ResponseFields | _Mapping | None = ...,
+        prompts: _Iterable[Prompt | _Mapping] | None = ...,
+        ttl: datetime.timedelta | _duration_pb2.Duration | _Mapping | None = ...,
     ) -> None: ...
 
 class EmbeddedResource(_message.Message):
@@ -707,8 +706,8 @@ class EmbeddedResource(_message.Message):
     annotations: Annotations
     def __init__(
         self,
-        contents: _Optional[_Union[ResourceContents, _Mapping]] = ...,
-        annotations: _Optional[_Union[Annotations, _Mapping]] = ...,
+        contents: ResourceContents | _Mapping | None = ...,
+        annotations: Annotations | _Mapping | None = ...,
     ) -> None: ...
 
 class PromptMessage(_message.Message):
@@ -727,12 +726,12 @@ class PromptMessage(_message.Message):
     resource_link: Resource
     def __init__(
         self,
-        role: _Optional[_Union[Role, str]] = ...,
-        text: _Optional[_Union[TextContent, _Mapping]] = ...,
-        image: _Optional[_Union[ImageContent, _Mapping]] = ...,
-        audio: _Optional[_Union[AudioContent, _Mapping]] = ...,
-        embedded_resource: _Optional[_Union[EmbeddedResource, _Mapping]] = ...,
-        resource_link: _Optional[_Union[Resource, _Mapping]] = ...,
+        role: Role | str | None = ...,
+        text: TextContent | _Mapping | None = ...,
+        image: ImageContent | _Mapping | None = ...,
+        audio: AudioContent | _Mapping | None = ...,
+        embedded_resource: EmbeddedResource | _Mapping | None = ...,
+        resource_link: Resource | _Mapping | None = ...,
     ) -> None: ...
 
 class GetPromptRequest(_message.Message):
@@ -743,7 +742,7 @@ class GetPromptRequest(_message.Message):
         VALUE_FIELD_NUMBER: _ClassVar[int]
         key: str
         value: str
-        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+        def __init__(self, key: str | None = ..., value: str | None = ...) -> None: ...
 
     COMMON_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
@@ -753,9 +752,9 @@ class GetPromptRequest(_message.Message):
     arguments: _containers.ScalarMap[str, str]
     def __init__(
         self,
-        common: _Optional[_Union[RequestFields, _Mapping]] = ...,
-        name: _Optional[str] = ...,
-        arguments: _Optional[_Mapping[str, str]] = ...,
+        common: RequestFields | _Mapping | None = ...,
+        name: str | None = ...,
+        arguments: _Mapping[str, str] | None = ...,
     ) -> None: ...
 
 class GetPromptResponse(_message.Message):
@@ -768,9 +767,9 @@ class GetPromptResponse(_message.Message):
     messages: _containers.RepeatedCompositeFieldContainer[PromptMessage]
     def __init__(
         self,
-        common: _Optional[_Union[ResponseFields, _Mapping]] = ...,
-        description: _Optional[str] = ...,
-        messages: _Optional[_Iterable[_Union[PromptMessage, _Mapping]]] = ...,
+        common: ResponseFields | _Mapping | None = ...,
+        description: str | None = ...,
+        messages: _Iterable[PromptMessage | _Mapping] | None = ...,
     ) -> None: ...
 
 class ToolAnnotations(_message.Message):
@@ -787,7 +786,7 @@ class ToolAnnotations(_message.Message):
     open_world_hint: bool
     def __init__(
         self,
-        title: _Optional[str] = ...,
+        title: str | None = ...,
         read_only_hint: bool = ...,
         destructive_hint: bool = ...,
         idempotent_hint: bool = ...,
@@ -810,19 +809,19 @@ class Tool(_message.Message):
     annotations: ToolAnnotations
     def __init__(
         self,
-        name: _Optional[str] = ...,
-        title: _Optional[str] = ...,
-        description: _Optional[str] = ...,
-        input_schema: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ...,
-        output_schema: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ...,
-        annotations: _Optional[_Union[ToolAnnotations, _Mapping]] = ...,
+        name: str | None = ...,
+        title: str | None = ...,
+        description: str | None = ...,
+        input_schema: _struct_pb2.Struct | _Mapping | None = ...,
+        output_schema: _struct_pb2.Struct | _Mapping | None = ...,
+        annotations: ToolAnnotations | _Mapping | None = ...,
     ) -> None: ...
 
 class ListToolsRequest(_message.Message):
     __slots__ = ("common",)
     COMMON_FIELD_NUMBER: _ClassVar[int]
     common: RequestFields
-    def __init__(self, common: _Optional[_Union[RequestFields, _Mapping]] = ...) -> None: ...
+    def __init__(self, common: RequestFields | _Mapping | None = ...) -> None: ...
 
 class ListToolsResponse(_message.Message):
     __slots__ = ("common", "tools", "ttl")
@@ -834,9 +833,9 @@ class ListToolsResponse(_message.Message):
     ttl: _duration_pb2.Duration
     def __init__(
         self,
-        common: _Optional[_Union[ResponseFields, _Mapping]] = ...,
-        tools: _Optional[_Iterable[_Union[Tool, _Mapping]]] = ...,
-        ttl: _Optional[_Union[datetime.timedelta, _duration_pb2.Duration, _Mapping]] = ...,
+        common: ResponseFields | _Mapping | None = ...,
+        tools: _Iterable[Tool | _Mapping] | None = ...,
+        ttl: datetime.timedelta | _duration_pb2.Duration | _Mapping | None = ...,
     ) -> None: ...
 
 class CallToolRequest(_message.Message):
@@ -848,7 +847,7 @@ class CallToolRequest(_message.Message):
         name: str
         arguments: _struct_pb2.Struct
         def __init__(
-            self, name: _Optional[str] = ..., arguments: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ...
+            self, name: str | None = ..., arguments: _struct_pb2.Struct | _Mapping | None = ...
         ) -> None: ...
 
     COMMON_FIELD_NUMBER: _ClassVar[int]
@@ -857,8 +856,8 @@ class CallToolRequest(_message.Message):
     request: CallToolRequest.Request
     def __init__(
         self,
-        common: _Optional[_Union[RequestFields, _Mapping]] = ...,
-        request: _Optional[_Union[CallToolRequest.Request, _Mapping]] = ...,
+        common: RequestFields | _Mapping | None = ...,
+        request: CallToolRequest.Request | _Mapping | None = ...,
     ) -> None: ...
 
 class CallToolResponse(_message.Message):
@@ -881,12 +880,12 @@ class CallToolResponse(_message.Message):
         is_error: bool
         def __init__(
             self,
-            text: _Optional[_Union[TextContent, _Mapping]] = ...,
-            image: _Optional[_Union[ImageContent, _Mapping]] = ...,
-            audio: _Optional[_Union[AudioContent, _Mapping]] = ...,
-            embedded_resource: _Optional[_Union[EmbeddedResource, _Mapping]] = ...,
-            resource_link: _Optional[_Union[Resource, _Mapping]] = ...,
-            structured_content: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ...,
+            text: TextContent | _Mapping | None = ...,
+            image: ImageContent | _Mapping | None = ...,
+            audio: AudioContent | _Mapping | None = ...,
+            embedded_resource: EmbeddedResource | _Mapping | None = ...,
+            resource_link: Resource | _Mapping | None = ...,
+            structured_content: _struct_pb2.Struct | _Mapping | None = ...,
             is_error: bool = ...,
         ) -> None: ...
 
@@ -896,15 +895,15 @@ class CallToolResponse(_message.Message):
     result: CallToolResponse.Result
     def __init__(
         self,
-        common: _Optional[_Union[ResponseFields, _Mapping]] = ...,
-        result: _Optional[_Union[CallToolResponse.Result, _Mapping]] = ...,
+        common: ResponseFields | _Mapping | None = ...,
+        result: CallToolResponse.Result | _Mapping | None = ...,
     ) -> None: ...
 
 class ResourceReference(_message.Message):
     __slots__ = ("uri",)
     URI_FIELD_NUMBER: _ClassVar[int]
     uri: str
-    def __init__(self, uri: _Optional[str] = ...) -> None: ...
+    def __init__(self, uri: str | None = ...) -> None: ...
 
 class PromptReference(_message.Message):
     __slots__ = ("name", "title")
@@ -912,7 +911,7 @@ class PromptReference(_message.Message):
     TITLE_FIELD_NUMBER: _ClassVar[int]
     name: str
     title: str
-    def __init__(self, name: _Optional[str] = ..., title: _Optional[str] = ...) -> None: ...
+    def __init__(self, name: str | None = ..., title: str | None = ...) -> None: ...
 
 class CompletionRequest(_message.Message):
     __slots__ = ("common", "resource_reference", "prompt_reference", "argument", "context")
@@ -922,7 +921,7 @@ class CompletionRequest(_message.Message):
         VALUE_FIELD_NUMBER: _ClassVar[int]
         name: str
         value: str
-        def __init__(self, name: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+        def __init__(self, name: str | None = ..., value: str | None = ...) -> None: ...
 
     class Context(_message.Message):
         __slots__ = ("arguments",)
@@ -932,11 +931,11 @@ class CompletionRequest(_message.Message):
             VALUE_FIELD_NUMBER: _ClassVar[int]
             key: str
             value: str
-            def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+            def __init__(self, key: str | None = ..., value: str | None = ...) -> None: ...
 
         ARGUMENTS_FIELD_NUMBER: _ClassVar[int]
         arguments: _containers.ScalarMap[str, str]
-        def __init__(self, arguments: _Optional[_Mapping[str, str]] = ...) -> None: ...
+        def __init__(self, arguments: _Mapping[str, str] | None = ...) -> None: ...
 
     COMMON_FIELD_NUMBER: _ClassVar[int]
     RESOURCE_REFERENCE_FIELD_NUMBER: _ClassVar[int]
@@ -950,11 +949,11 @@ class CompletionRequest(_message.Message):
     context: CompletionRequest.Context
     def __init__(
         self,
-        common: _Optional[_Union[RequestFields, _Mapping]] = ...,
-        resource_reference: _Optional[_Union[ResourceReference, _Mapping]] = ...,
-        prompt_reference: _Optional[_Union[PromptReference, _Mapping]] = ...,
-        argument: _Optional[_Union[CompletionRequest.Argument, _Mapping]] = ...,
-        context: _Optional[_Union[CompletionRequest.Context, _Mapping]] = ...,
+        common: RequestFields | _Mapping | None = ...,
+        resource_reference: ResourceReference | _Mapping | None = ...,
+        prompt_reference: PromptReference | _Mapping | None = ...,
+        argument: CompletionRequest.Argument | _Mapping | None = ...,
+        context: CompletionRequest.Context | _Mapping | None = ...,
     ) -> None: ...
 
 class CompletionResponse(_message.Message):
@@ -969,8 +968,8 @@ class CompletionResponse(_message.Message):
     has_more: bool
     def __init__(
         self,
-        common: _Optional[_Union[ResponseFields, _Mapping]] = ...,
-        values: _Optional[_Iterable[str]] = ...,
-        total_matches: _Optional[int] = ...,
+        common: ResponseFields | _Mapping | None = ...,
+        values: _Iterable[str] | None = ...,
+        total_matches: int | None = ...,
         has_more: bool = ...,
     ) -> None: ...

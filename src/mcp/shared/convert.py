@@ -2,17 +2,16 @@
 
 import base64
 import logging
-from typing import Any, Sequence
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
+from typing import Any
 
-from google.protobuf import json_format
+from google.protobuf import json_format, struct_pb2
 from google.protobuf.message import Message
 
 from mcp import types
-from mcp.types import ErrorData
-from mcp.shared.exceptions import McpError
 from mcp.proto import mcp_pb2
-from google.protobuf import struct_pb2
+from mcp.shared.exceptions import McpError
+from mcp.types import ErrorData
 
 logger = logging.getLogger(__name__)
 

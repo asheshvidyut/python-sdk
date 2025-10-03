@@ -5,11 +5,12 @@ This script demonstrates how to connect to and interact with the Simple gRPC Ser
 using the MCPClient class pattern with gRPC transport.
 """
 
-import logging
-from mcp.client.grpc_transport_session import GRPCTransportSession
-from mcp import McpError
-import asyncio
 import argparse
+import asyncio
+import logging
+
+from mcp import McpError
+from mcp.client.grpc_transport_session import GRPCTransportSession
 
 logging.basicConfig(level=logging.INFO)
 

@@ -5,6 +5,7 @@ from __future__ import annotations as _annotations
 import inspect
 import re
 from collections.abc import AsyncIterator, Awaitable, Callable, Collection, Iterable, Sequence
+from concurrent.futures import Executor
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import Any, Generic, Literal
 
@@ -50,9 +51,6 @@ from mcp.types import Resource as MCPResource
 from mcp.types import ResourceTemplate as MCPResourceTemplate
 from mcp.types import Tool as MCPTool
 
-from typing import Optional
-from concurrent.futures import Executor
-
 logger = get_logger(__name__)
 
 
@@ -92,13 +90,13 @@ class Settings(BaseSettings, Generic[LifespanResultT]):
     # TODO(asheshvidyut): Implement proper type hints for gRPC settings.
     target: str
     grpc_enable_reflection: bool
-    grpc_migration_thread_pool: Optional[Executor]
-    grpc_handlers: Optional[Any]
-    grpc_interceptors: Optional[Sequence[Any]]
-    grpc_options: Optional[Any]
-    grpc_maximum_concurrent_rpcs: Optional[int]
-    grpc_compression: Optional[Any]
-    grpc_credentials: Optional[Any]
+    grpc_migration_thread_pool: Executor | None
+    grpc_handlers: Any | None
+    grpc_interceptors: Sequence[Any] | None
+    grpc_options: Any | None
+    grpc_maximum_concurrent_rpcs: int | None
+    grpc_compression: Any | None
+    grpc_credentials: Any | None
 
     # resource settings
     warn_on_duplicate_resources: bool
@@ -165,13 +163,13 @@ class FastMCP(Generic[LifespanResultT]):
         transport_security: TransportSecuritySettings | None = None,
         target: str = "127.0.0.1:50051",
         grpc_enable_reflection: bool = False,
-        grpc_migration_thread_pool: Optional[Executor] = None,
-        grpc_handlers: Optional[Sequence[Any]] = None,
-        grpc_interceptors: Optional[Sequence[Any]] = None,
-        grpc_options: Optional[Any] = None,
-        grpc_maximum_concurrent_rpcs: Optional[int] = None,
-        grpc_compression: Optional[Any] = None,
-        grpc_credentials: Optional[Any] = None,
+        grpc_migration_thread_pool: Executor | None = None,
+        grpc_handlers: Sequence[Any] | None = None,
+        grpc_interceptors: Sequence[Any] | None = None,
+        grpc_options: Any | None = None,
+        grpc_maximum_concurrent_rpcs: int | None = None,
+        grpc_compression: Any | None = None,
+        grpc_credentials: Any | None = None,
     ):
         self.settings = Settings(
             debug=debug,

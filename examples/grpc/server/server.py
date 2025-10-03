@@ -14,14 +14,15 @@ logging.basicConfig(
 )
 
 import argparse
-from typing import Annotated, TypedDict, Any
-
 import asyncio
-from mcp.server.fastmcp import Context, FastMCP
-from mcp.server.session import ServerSession
-from pydantic import BaseModel, Field
 from io import BytesIO
+from typing import Annotated, TypedDict
+
+from pydantic import BaseModel, Field
+
+from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.utilities.types import Image
+from mcp.server.session import ServerSession
 
 
 class ShrimpTank(BaseModel):
