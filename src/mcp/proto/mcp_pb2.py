@@ -4,19 +4,14 @@
 # source: mcp.proto
 # Protobuf Python Version: 6.31.1
 """Generated protocol buffer code."""
+
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
-_runtime_version.ValidateProtobufRuntimeVersion(
-    _runtime_version.Domain.PUBLIC,
-    6,
-    31,
-    1,
-    '',
-    'mcp.proto'
-)
+
+_runtime_version.ValidateProtobufRuntimeVersion(_runtime_version.Domain.PUBLIC, 6, 31, 1, "", "mcp.proto")
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
@@ -26,149 +21,151 @@ from google.protobuf import duration_pb2 as google_dot_protobuf_dot_duration__pb
 from google.protobuf import struct_pb2 as google_dot_protobuf_dot_struct__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\tmcp.proto\x12\x1dthird_party_py_mcp_grpc_proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto\"`\n\x14ProgressNotification\x12\x16\n\x0eprogress_token\x18\x01 \x01(\t\x12\x10\n\x08progress\x18\x02 \x01(\x02\x12\r\n\x05total\x18\x03 \x01(\x02\x12\x0f\n\x07message\x18\x04 \x01(\t\"~\n\nLogMessage\x12:\n\tlog_level\x18\x01 \x01(\x0e\x32\'.third_party_py_mcp_grpc_proto.LogLevel\x12\x0e\n\x06logger\x18\x02 \x01(\t\x12$\n\x04\x64\x61ta\x18\x03 \x01(\x0b\x32\x16.google.protobuf.Value\"\xa4\x04\n\rRequestFields\x12H\n\x10protocol_version\x18\x01 \x01(\x0e\x32..third_party_py_mcp_grpc_proto.ProtocolVersion\x12)\n\x08metadata\x18\x02 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x0e\n\x06\x63ursor\x18\x03 \x01(\t\x12\x45\n\x08progress\x18\x04 \x01(\x0b\x32\x33.third_party_py_mcp_grpc_proto.ProgressNotification\x12\x15\n\rlast_event_id\x18\x05 \x01(\t\x12>\n\rset_log_level\x18\x06 \x01(\x0e\x32\'.third_party_py_mcp_grpc_proto.LogLevel\x12\x62\n\x1esampling_create_message_result\x18\x07 \x01(\x0b\x32:.third_party_py_mcp_grpc_proto.SamplingCreateMessageResult\x12H\n\x10root_list_result\x18\x08 \x01(\x0b\x32..third_party_py_mcp_grpc_proto.ListRootsResult\x12\x42\n\relicit_result\x18\t \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.ElicitResult\"\xde\x04\n\x0eResponseFields\x12H\n\x10protocol_version\x18\x01 \x01(\x0e\x32..third_party_py_mcp_grpc_proto.ProtocolVersion\x12\x14\n\x0cinstructions\x18\x02 \x01(\t\x12\x10\n\x08\x65vent_id\x18\x03 \x01(\t\x12)\n\x08metadata\x18\x04 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x13\n\x0bnext_cursor\x18\x05 \x01(\t\x12\x45\n\x08progress\x18\x06 \x01(\x0b\x32\x33.third_party_py_mcp_grpc_proto.ProgressNotification\x12>\n\x0blog_message\x18\x07 \x01(\x0b\x32).third_party_py_mcp_grpc_proto.LogMessage\x12\\\n\x17sampling_create_message\x18\x08 \x01(\x0b\x32;.third_party_py_mcp_grpc_proto.SamplingCreateMessageRequest\x12K\n\x12list_roots_request\x18\t \x01(\x0b\x32/.third_party_py_mcp_grpc_proto.ListRootsRequest\x12\"\n\x1anotify_on_root_list_update\x18\n \x01(\x08\x12\x44\n\x0e\x65licit_request\x18\x0b \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.ElicitRequest\"V\n\x0b\x41nnotations\x12\x35\n\x08\x61udience\x18\x01 \x03(\x0e\x32#.third_party_py_mcp_grpc_proto.Role\x12\x10\n\x08priority\x18\x02 \x01(\x02\"\\\n\x0bTextContent\x12\x0c\n\x04text\x18\x01 \x01(\t\x12?\n\x0b\x61nnotations\x18\x02 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.Annotations\"p\n\x0cImageContent\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x12\x11\n\tmime_type\x18\x02 \x01(\t\x12?\n\x0b\x61nnotations\x18\x03 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.Annotations\"p\n\x0c\x41udioContent\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x12\x11\n\tmime_type\x18\x02 \x01(\t\x12?\n\x0b\x61nnotations\x18\x03 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.Annotations\"\x12\n\x10ListRootsRequest\"x\n\x0fListRootsResult\x12\x42\n\x05roots\x18\x01 \x03(\x0b\x32\x33.third_party_py_mcp_grpc_proto.ListRootsResult.Root\x1a!\n\x04Root\x12\x0b\n\x03uri\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\"\xf6\x01\n\x0fSamplingMessage\x12\x31\n\x04role\x18\x01 \x01(\x0e\x32#.third_party_py_mcp_grpc_proto.Role\x12\x38\n\x04text\x18\x02 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.TextContent\x12:\n\x05image\x18\x03 \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.ImageContent\x12:\n\x05\x61udio\x18\x04 \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.AudioContent\"\xa8\x05\n\x1cSamplingCreateMessageRequest\x12@\n\x08messages\x18\x01 \x03(\x0b\x32..third_party_py_mcp_grpc_proto.SamplingMessage\x12g\n\x11model_preferences\x18\x02 \x01(\x0b\x32L.third_party_py_mcp_grpc_proto.SamplingCreateMessageRequest.ModelPreferences\x12\x15\n\rsystem_prompt\x18\x03 \x01(\t\x12\x63\n\x0finclude_context\x18\x04 \x01(\x0e\x32J.third_party_py_mcp_grpc_proto.SamplingCreateMessageRequest.IncludeContext\x12\x13\n\x0btemperature\x18\x05 \x01(\x02\x12\x12\n\nmax_tokens\x18\x06 \x01(\x05\x12\x15\n\rstop_sequence\x18\x07 \x03(\t\x1a\xe2\x01\n\x10ModelPreferences\x12\x65\n\x05hints\x18\x01 \x03(\x0b\x32V.third_party_py_mcp_grpc_proto.SamplingCreateMessageRequest.ModelPreferences.ModelHint\x12\x1d\n\x15intelligence_priority\x18\x02 \x01(\x02\x12\x16\n\x0espeed_priority\x18\x03 \x01(\x02\x12\x15\n\rcost_priority\x18\x04 \x01(\x02\x1a\x19\n\tModelHint\x12\x0c\n\x04name\x18\x01 \x01(\t\"<\n\x0eIncludeContext\x12\x08\n\x04NONE\x10\x00\x12\x0f\n\x0bTHIS_SERVER\x10\x01\x12\x0f\n\x0b\x41LL_SERVERS\x10\x02\"\x82\x01\n\x1bSamplingCreateMessageResult\x12?\n\x07message\x18\x01 \x01(\x0b\x32..third_party_py_mcp_grpc_proto.SamplingMessage\x12\r\n\x05model\x18\x02 \x01(\t\x12\x13\n\x0bstop_reason\x18\x03 \x01(\t\"\xa8\x07\n\x19PrimitiveSchemaDefinition\x12\\\n\rstring_schema\x18\x01 \x01(\x0b\x32\x45.third_party_py_mcp_grpc_proto.PrimitiveSchemaDefinition.StringSchema\x12\\\n\rnumber_schema\x18\x02 \x01(\x0b\x32\x45.third_party_py_mcp_grpc_proto.PrimitiveSchemaDefinition.NumberSchema\x12^\n\x0e\x62oolean_schema\x18\x03 \x01(\x0b\x32\x46.third_party_py_mcp_grpc_proto.PrimitiveSchemaDefinition.BooleanSchema\x12X\n\x0b\x65num_schema\x18\x04 \x01(\x0b\x32\x43.third_party_py_mcp_grpc_proto.PrimitiveSchemaDefinition.EnumSchema\x1a\x9f\x02\n\x0cStringSchema\x12\r\n\x05title\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x12\n\nmin_length\x18\x03 \x01(\x04\x12\x12\n\nmax_length\x18\x04 \x01(\x04\x12\\\n\x06\x66ormat\x18\x05 \x01(\x0e\x32L.third_party_py_mcp_grpc_proto.PrimitiveSchemaDefinition.StringSchema.Format\"e\n\x06\x46ormat\x12\x12\n\x0e\x46ORMAT_UNKNOWN\x10\x00\x12\x10\n\x0c\x46ORMAT_EMAIL\x10\x01\x12\x0e\n\nFORMAT_URI\x10\x02\x12\x0f\n\x0b\x46ORMAT_DATE\x10\x03\x12\x14\n\x10\x46ORMAT_DATE_TIME\x10\x04\x1aT\n\x0cNumberSchema\x12\r\n\x05title\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x0f\n\x07minimum\x18\x03 \x01(\x04\x12\x0f\n\x07maximum\x18\x04 \x01(\x04\x1a\x44\n\rBooleanSchema\x12\r\n\x05title\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x03 \x01(\x08\x1aW\n\nEnumSchema\x12\r\n\x05title\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x11\n\tenum_list\x18\x03 \x03(\t\x12\x12\n\nenum_names\x18\x04 \x03(\t\"\x88\x02\n\rElicitRequest\x12\x0f\n\x07message\x18\x01 \x01(\t\x12[\n\x10requested_schema\x18\x02 \x03(\x0b\x32\x41.third_party_py_mcp_grpc_proto.ElicitRequest.RequestedSchemaEntry\x12\x17\n\x0frequired_fields\x18\x03 \x03(\t\x1ap\n\x14RequestedSchemaEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12G\n\x05value\x18\x02 \x01(\x0b\x32\x38.third_party_py_mcp_grpc_proto.PrimitiveSchemaDefinition:\x02\x38\x01\"\xc1\x01\n\x0c\x45licitResult\x12>\n\x04type\x18\x01 \x01(\x0e\x32\x30.third_party_py_mcp_grpc_proto.ElicitResult.Type\x12(\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x17.google.protobuf.Struct\"G\n\x04Type\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0f\n\x0bTYPE_ACCEPT\x10\x01\x12\x10\n\x0cTYPE_DECLINE\x10\x02\x12\x0f\n\x0bTYPE_CANCEL\x10\x03\"\xab\x01\n\x08Resource\x12\x0b\n\x03uri\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\r\n\x05title\x18\x07 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\x12\x11\n\tmime_type\x18\x04 \x01(\t\x12?\n\x0b\x61nnotations\x18\x05 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.Annotations\x12\x0c\n\x04size\x18\x06 \x01(\x04\"T\n\x14ListResourcesRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\"\xba\x01\n\x15ListResourcesResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12:\n\tresources\x18\x02 \x03(\x0b\x32\'.third_party_py_mcp_grpc_proto.Resource\x12&\n\x03ttl\x18\x03 \x01(\x0b\x32\x19.google.protobuf.Duration\"N\n\x10ResourceContents\x12\x0b\n\x03uri\x18\x01 \x01(\t\x12\x11\n\tmime_type\x18\x02 \x01(\t\x12\x0c\n\x04text\x18\x03 \x01(\t\x12\x0c\n\x04\x62lob\x18\x04 \x01(\x0c\"`\n\x13ReadResourceRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\x12\x0b\n\x03uri\x18\x02 \x01(\t\"\x98\x01\n\x14ReadResourceResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12\x41\n\x08resource\x18\x02 \x01(\x0b\x32/.third_party_py_mcp_grpc_proto.ResourceContents\"\xae\x01\n\x10ResourceTemplate\x12\x14\n\x0curi_template\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\r\n\x05title\x18\x06 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\x12\x11\n\tmime_type\x18\x04 \x01(\t\x12?\n\x0b\x61nnotations\x18\x05 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.Annotations\"\\\n\x1cListResourceTemplatesRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\"\xd3\x01\n\x1dListResourceTemplatesResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12K\n\x12resource_templates\x18\x02 \x03(\x0b\x32/.third_party_py_mcp_grpc_proto.ResourceTemplate\x12&\n\x03ttl\x18\x03 \x01(\x0b\x32\x19.google.protobuf.Duration\"e\n\x18ResourceSubscribeRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\x12\x0b\n\x03uri\x18\x02 \x01(\t\"Z\n\x19ResourceSubscribeResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\"\xcd\x01\n\x06Prompt\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x04 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x41\n\targuments\x18\x03 \x03(\x0b\x32..third_party_py_mcp_grpc_proto.Prompt.Argument\x1aN\n\x08\x41rgument\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x04 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x10\n\x08required\x18\x03 \x01(\x08\"R\n\x12ListPromptsRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\"\xb4\x01\n\x13ListPromptsResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12\x36\n\x07prompts\x18\x02 \x03(\x0b\x32%.third_party_py_mcp_grpc_proto.Prompt\x12&\n\x03ttl\x18\x03 \x01(\x0b\x32\x19.google.protobuf.Duration\"\x96\x01\n\x10\x45mbeddedResource\x12\x41\n\x08\x63ontents\x18\x01 \x01(\x0b\x32/.third_party_py_mcp_grpc_proto.ResourceContents\x12?\n\x0b\x61nnotations\x18\x02 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.Annotations\"\x80\x03\n\rPromptMessage\x12\x31\n\x04role\x18\x01 \x01(\x0e\x32#.third_party_py_mcp_grpc_proto.Role\x12\x38\n\x04text\x18\x02 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.TextContent\x12:\n\x05image\x18\x03 \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.ImageContent\x12:\n\x05\x61udio\x18\x04 \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.AudioContent\x12J\n\x11\x65mbedded_resource\x18\x05 \x01(\x0b\x32/.third_party_py_mcp_grpc_proto.EmbeddedResource\x12>\n\rresource_link\x18\x06 \x01(\x0b\x32\'.third_party_py_mcp_grpc_proto.Resource\"\xe3\x01\n\x10GetPromptRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\x12\x0c\n\x04name\x18\x02 \x01(\t\x12Q\n\targuments\x18\x03 \x03(\x0b\x32>.third_party_py_mcp_grpc_proto.GetPromptRequest.ArgumentsEntry\x1a\x30\n\x0e\x41rgumentsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xa7\x01\n\x11GetPromptResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12>\n\x08messages\x18\x03 \x03(\x0b\x32,.third_party_py_mcp_grpc_proto.PromptMessage\"\x84\x01\n\x0fToolAnnotations\x12\r\n\x05title\x18\x01 \x01(\t\x12\x16\n\x0eread_only_hint\x18\x02 \x01(\x08\x12\x18\n\x10\x64\x65structive_hint\x18\x03 \x01(\x08\x12\x17\n\x0fidempotent_hint\x18\x04 \x01(\x08\x12\x17\n\x0fopen_world_hint\x18\x05 \x01(\x08\"\xdc\x01\n\x04Tool\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x06 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12-\n\x0cinput_schema\x18\x03 \x01(\x0b\x32\x17.google.protobuf.Struct\x12.\n\routput_schema\x18\x05 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x43\n\x0b\x61nnotations\x18\x04 \x01(\x0b\x32..third_party_py_mcp_grpc_proto.ToolAnnotations\"P\n\x10ListToolsRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\"\xae\x01\n\x11ListToolsResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12\x32\n\x05tools\x18\x02 \x03(\x0b\x32#.third_party_py_mcp_grpc_proto.Tool\x12&\n\x03ttl\x18\x03 \x01(\x0b\x32\x19.google.protobuf.Duration\"\xdd\x01\n\x0f\x43\x61llToolRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\x12G\n\x07request\x18\x02 \x01(\x0b\x32\x36.third_party_py_mcp_grpc_proto.CallToolRequest.Request\x1a\x43\n\x07Request\x12\x0c\n\x04name\x18\x01 \x01(\t\x12*\n\targuments\x18\x02 \x01(\x0b\x32\x17.google.protobuf.Struct\"\xa9\x04\n\x10\x43\x61llToolResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12\x46\n\x06result\x18\x02 \x01(\x0b\x32\x36.third_party_py_mcp_grpc_proto.CallToolResponse.Result\x1a\x8d\x03\n\x06Result\x12\x38\n\x04text\x18\x01 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.TextContent\x12:\n\x05image\x18\x02 \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.ImageContent\x12:\n\x05\x61udio\x18\x03 \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.AudioContent\x12J\n\x11\x65mbedded_resource\x18\x04 \x01(\x0b\x32/.third_party_py_mcp_grpc_proto.EmbeddedResource\x12>\n\rresource_link\x18\x07 \x01(\x0b\x32\'.third_party_py_mcp_grpc_proto.Resource\x12\x33\n\x12structured_content\x18\x06 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x10\n\x08is_error\x18\x05 \x01(\x08\" \n\x11ResourceReference\x12\x0b\n\x03uri\x18\x01 \x01(\t\".\n\x0fPromptReference\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\"\xc4\x04\n\x11\x43ompletionRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\x12L\n\x12resource_reference\x18\x02 \x01(\x0b\x32\x30.third_party_py_mcp_grpc_proto.ResourceReference\x12H\n\x10prompt_reference\x18\x03 \x01(\x0b\x32..third_party_py_mcp_grpc_proto.PromptReference\x12K\n\x08\x61rgument\x18\x04 \x01(\x0b\x32\x39.third_party_py_mcp_grpc_proto.CompletionRequest.Argument\x12I\n\x07\x63ontext\x18\x05 \x01(\x0b\x32\x38.third_party_py_mcp_grpc_proto.CompletionRequest.Context\x1a\'\n\x08\x41rgument\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\x1a\x97\x01\n\x07\x43ontext\x12Z\n\targuments\x18\x01 \x03(\x0b\x32G.third_party_py_mcp_grpc_proto.CompletionRequest.Context.ArgumentsEntry\x1a\x30\n\x0e\x41rgumentsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x8c\x01\n\x12\x43ompletionResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12\x0e\n\x06values\x18\x02 \x03(\t\x12\x15\n\rtotal_matches\x18\x03 \x01(\x03\x12\x10\n\x08has_more\x18\x04 \x01(\x08*R\n\x0fProtocolVersion\x12\x13\n\x0fVERSION_UNKNOWN\x10\x00\x12\x14\n\x10VERSION_20250326\x10\x01\x12\x14\n\x10VERSION_20250618\x10\x02*\xd2\x01\n\x08LogLevel\x12\x15\n\x11LOG_LEVEL_UNKNOWN\x10\x00\x12\x13\n\x0fLOG_LEVEL_DEBUG\x10\x01\x12\x12\n\x0eLOG_LEVEL_INFO\x10\x02\x12\x14\n\x10LOG_LEVEL_NOTICE\x10\x03\x12\x15\n\x11LOG_LEVEL_WARNING\x10\x04\x12\x13\n\x0fLOG_LEVEL_ERROR\x10\x05\x12\x16\n\x12LOG_LEVEL_CRITICAL\x10\x06\x12\x13\n\x0fLOG_LEVEL_ALERT\x10\x07\x12\x17\n\x13LOG_LEVEL_EMERGENCY\x10\x08*;\n\x04Role\x12\x10\n\x0cROLE_UNKNOWN\x10\x00\x12\r\n\tROLE_USER\x10\x01\x12\x12\n\x0eROLE_ASSISTANT\x10\x02\x32\xd2\x08\n\x03Mcp\x12z\n\rListResources\x12\x33.third_party_py_mcp_grpc_proto.ListResourcesRequest\x1a\x34.third_party_py_mcp_grpc_proto.ListResourcesResponse\x12w\n\x0cReadResource\x12\x32.third_party_py_mcp_grpc_proto.ReadResourceRequest\x1a\x33.third_party_py_mcp_grpc_proto.ReadResourceResponse\x12\x92\x01\n\x15ListResourceTemplates\x12;.third_party_py_mcp_grpc_proto.ListResourceTemplatesRequest\x1a<.third_party_py_mcp_grpc_proto.ListResourceTemplatesResponse\x12\x88\x01\n\x11ResourceSubscribe\x12\x37.third_party_py_mcp_grpc_proto.ResourceSubscribeRequest\x1a\x38.third_party_py_mcp_grpc_proto.ResourceSubscribeResponse0\x01\x12t\n\x0bListPrompts\x12\x31.third_party_py_mcp_grpc_proto.ListPromptsRequest\x1a\x32.third_party_py_mcp_grpc_proto.ListPromptsResponse\x12n\n\tGetPrompt\x12/.third_party_py_mcp_grpc_proto.GetPromptRequest\x1a\x30.third_party_py_mcp_grpc_proto.GetPromptResponse\x12n\n\tListTools\x12/.third_party_py_mcp_grpc_proto.ListToolsRequest\x1a\x30.third_party_py_mcp_grpc_proto.ListToolsResponse\x12o\n\x08\x43\x61llTool\x12..third_party_py_mcp_grpc_proto.CallToolRequest\x1a/.third_party_py_mcp_grpc_proto.CallToolResponse(\x01\x30\x01\x12o\n\x08\x43omplete\x12\x30.third_party_py_mcp_grpc_proto.CompletionRequest\x1a\x31.third_party_py_mcp_grpc_proto.CompletionResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b'\n\tmcp.proto\x12\x1dthird_party_py_mcp_grpc_proto\x1a\x1egoogle/protobuf/duration.proto\x1a\x1cgoogle/protobuf/struct.proto"`\n\x14ProgressNotification\x12\x16\n\x0eprogress_token\x18\x01 \x01(\t\x12\x10\n\x08progress\x18\x02 \x01(\x02\x12\r\n\x05total\x18\x03 \x01(\x02\x12\x0f\n\x07message\x18\x04 \x01(\t"~\n\nLogMessage\x12:\n\tlog_level\x18\x01 \x01(\x0e\x32\'.third_party_py_mcp_grpc_proto.LogLevel\x12\x0e\n\x06logger\x18\x02 \x01(\t\x12$\n\x04\x64\x61ta\x18\x03 \x01(\x0b\x32\x16.google.protobuf.Value"\xa4\x04\n\rRequestFields\x12H\n\x10protocol_version\x18\x01 \x01(\x0e\x32..third_party_py_mcp_grpc_proto.ProtocolVersion\x12)\n\x08metadata\x18\x02 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x0e\n\x06\x63ursor\x18\x03 \x01(\t\x12\x45\n\x08progress\x18\x04 \x01(\x0b\x32\x33.third_party_py_mcp_grpc_proto.ProgressNotification\x12\x15\n\rlast_event_id\x18\x05 \x01(\t\x12>\n\rset_log_level\x18\x06 \x01(\x0e\x32\'.third_party_py_mcp_grpc_proto.LogLevel\x12\x62\n\x1esampling_create_message_result\x18\x07 \x01(\x0b\x32:.third_party_py_mcp_grpc_proto.SamplingCreateMessageResult\x12H\n\x10root_list_result\x18\x08 \x01(\x0b\x32..third_party_py_mcp_grpc_proto.ListRootsResult\x12\x42\n\relicit_result\x18\t \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.ElicitResult"\xde\x04\n\x0eResponseFields\x12H\n\x10protocol_version\x18\x01 \x01(\x0e\x32..third_party_py_mcp_grpc_proto.ProtocolVersion\x12\x14\n\x0cinstructions\x18\x02 \x01(\t\x12\x10\n\x08\x65vent_id\x18\x03 \x01(\t\x12)\n\x08metadata\x18\x04 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x13\n\x0bnext_cursor\x18\x05 \x01(\t\x12\x45\n\x08progress\x18\x06 \x01(\x0b\x32\x33.third_party_py_mcp_grpc_proto.ProgressNotification\x12>\n\x0blog_message\x18\x07 \x01(\x0b\x32).third_party_py_mcp_grpc_proto.LogMessage\x12\\\n\x17sampling_create_message\x18\x08 \x01(\x0b\x32;.third_party_py_mcp_grpc_proto.SamplingCreateMessageRequest\x12K\n\x12list_roots_request\x18\t \x01(\x0b\x32/.third_party_py_mcp_grpc_proto.ListRootsRequest\x12"\n\x1anotify_on_root_list_update\x18\n \x01(\x08\x12\x44\n\x0e\x65licit_request\x18\x0b \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.ElicitRequest"V\n\x0b\x41nnotations\x12\x35\n\x08\x61udience\x18\x01 \x03(\x0e\x32#.third_party_py_mcp_grpc_proto.Role\x12\x10\n\x08priority\x18\x02 \x01(\x02"\\\n\x0bTextContent\x12\x0c\n\x04text\x18\x01 \x01(\t\x12?\n\x0b\x61nnotations\x18\x02 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.Annotations"p\n\x0cImageContent\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x12\x11\n\tmime_type\x18\x02 \x01(\t\x12?\n\x0b\x61nnotations\x18\x03 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.Annotations"p\n\x0c\x41udioContent\x12\x0c\n\x04\x64\x61ta\x18\x01 \x01(\x0c\x12\x11\n\tmime_type\x18\x02 \x01(\t\x12?\n\x0b\x61nnotations\x18\x03 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.Annotations"\x12\n\x10ListRootsRequest"x\n\x0fListRootsResult\x12\x42\n\x05roots\x18\x01 \x03(\x0b\x32\x33.third_party_py_mcp_grpc_proto.ListRootsResult.Root\x1a!\n\x04Root\x12\x0b\n\x03uri\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t"\xf6\x01\n\x0fSamplingMessage\x12\x31\n\x04role\x18\x01 \x01(\x0e\x32#.third_party_py_mcp_grpc_proto.Role\x12\x38\n\x04text\x18\x02 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.TextContent\x12:\n\x05image\x18\x03 \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.ImageContent\x12:\n\x05\x61udio\x18\x04 \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.AudioContent"\xa8\x05\n\x1cSamplingCreateMessageRequest\x12@\n\x08messages\x18\x01 \x03(\x0b\x32..third_party_py_mcp_grpc_proto.SamplingMessage\x12g\n\x11model_preferences\x18\x02 \x01(\x0b\x32L.third_party_py_mcp_grpc_proto.SamplingCreateMessageRequest.ModelPreferences\x12\x15\n\rsystem_prompt\x18\x03 \x01(\t\x12\x63\n\x0finclude_context\x18\x04 \x01(\x0e\x32J.third_party_py_mcp_grpc_proto.SamplingCreateMessageRequest.IncludeContext\x12\x13\n\x0btemperature\x18\x05 \x01(\x02\x12\x12\n\nmax_tokens\x18\x06 \x01(\x05\x12\x15\n\rstop_sequence\x18\x07 \x03(\t\x1a\xe2\x01\n\x10ModelPreferences\x12\x65\n\x05hints\x18\x01 \x03(\x0b\x32V.third_party_py_mcp_grpc_proto.SamplingCreateMessageRequest.ModelPreferences.ModelHint\x12\x1d\n\x15intelligence_priority\x18\x02 \x01(\x02\x12\x16\n\x0espeed_priority\x18\x03 \x01(\x02\x12\x15\n\rcost_priority\x18\x04 \x01(\x02\x1a\x19\n\tModelHint\x12\x0c\n\x04name\x18\x01 \x01(\t"<\n\x0eIncludeContext\x12\x08\n\x04NONE\x10\x00\x12\x0f\n\x0bTHIS_SERVER\x10\x01\x12\x0f\n\x0b\x41LL_SERVERS\x10\x02"\x82\x01\n\x1bSamplingCreateMessageResult\x12?\n\x07message\x18\x01 \x01(\x0b\x32..third_party_py_mcp_grpc_proto.SamplingMessage\x12\r\n\x05model\x18\x02 \x01(\t\x12\x13\n\x0bstop_reason\x18\x03 \x01(\t"\xa8\x07\n\x19PrimitiveSchemaDefinition\x12\\\n\rstring_schema\x18\x01 \x01(\x0b\x32\x45.third_party_py_mcp_grpc_proto.PrimitiveSchemaDefinition.StringSchema\x12\\\n\rnumber_schema\x18\x02 \x01(\x0b\x32\x45.third_party_py_mcp_grpc_proto.PrimitiveSchemaDefinition.NumberSchema\x12^\n\x0e\x62oolean_schema\x18\x03 \x01(\x0b\x32\x46.third_party_py_mcp_grpc_proto.PrimitiveSchemaDefinition.BooleanSchema\x12X\n\x0b\x65num_schema\x18\x04 \x01(\x0b\x32\x43.third_party_py_mcp_grpc_proto.PrimitiveSchemaDefinition.EnumSchema\x1a\x9f\x02\n\x0cStringSchema\x12\r\n\x05title\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x12\n\nmin_length\x18\x03 \x01(\x04\x12\x12\n\nmax_length\x18\x04 \x01(\x04\x12\\\n\x06\x66ormat\x18\x05 \x01(\x0e\x32L.third_party_py_mcp_grpc_proto.PrimitiveSchemaDefinition.StringSchema.Format"e\n\x06\x46ormat\x12\x12\n\x0e\x46ORMAT_UNKNOWN\x10\x00\x12\x10\n\x0c\x46ORMAT_EMAIL\x10\x01\x12\x0e\n\nFORMAT_URI\x10\x02\x12\x0f\n\x0b\x46ORMAT_DATE\x10\x03\x12\x14\n\x10\x46ORMAT_DATE_TIME\x10\x04\x1aT\n\x0cNumberSchema\x12\r\n\x05title\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x0f\n\x07minimum\x18\x03 \x01(\x04\x12\x0f\n\x07maximum\x18\x04 \x01(\x04\x1a\x44\n\rBooleanSchema\x12\r\n\x05title\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x0f\n\x07\x64\x65\x66\x61ult\x18\x03 \x01(\x08\x1aW\n\nEnumSchema\x12\r\n\x05title\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x11\n\tenum_list\x18\x03 \x03(\t\x12\x12\n\nenum_names\x18\x04 \x03(\t"\x88\x02\n\rElicitRequest\x12\x0f\n\x07message\x18\x01 \x01(\t\x12[\n\x10requested_schema\x18\x02 \x03(\x0b\x32\x41.third_party_py_mcp_grpc_proto.ElicitRequest.RequestedSchemaEntry\x12\x17\n\x0frequired_fields\x18\x03 \x03(\t\x1ap\n\x14RequestedSchemaEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12G\n\x05value\x18\x02 \x01(\x0b\x32\x38.third_party_py_mcp_grpc_proto.PrimitiveSchemaDefinition:\x02\x38\x01"\xc1\x01\n\x0c\x45licitResult\x12>\n\x04type\x18\x01 \x01(\x0e\x32\x30.third_party_py_mcp_grpc_proto.ElicitResult.Type\x12(\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x17.google.protobuf.Struct"G\n\x04Type\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x0f\n\x0bTYPE_ACCEPT\x10\x01\x12\x10\n\x0cTYPE_DECLINE\x10\x02\x12\x0f\n\x0bTYPE_CANCEL\x10\x03"\xab\x01\n\x08Resource\x12\x0b\n\x03uri\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\r\n\x05title\x18\x07 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\x12\x11\n\tmime_type\x18\x04 \x01(\t\x12?\n\x0b\x61nnotations\x18\x05 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.Annotations\x12\x0c\n\x04size\x18\x06 \x01(\x04"T\n\x14ListResourcesRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields"\xba\x01\n\x15ListResourcesResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12:\n\tresources\x18\x02 \x03(\x0b\x32\'.third_party_py_mcp_grpc_proto.Resource\x12&\n\x03ttl\x18\x03 \x01(\x0b\x32\x19.google.protobuf.Duration"N\n\x10ResourceContents\x12\x0b\n\x03uri\x18\x01 \x01(\t\x12\x11\n\tmime_type\x18\x02 \x01(\t\x12\x0c\n\x04text\x18\x03 \x01(\t\x12\x0c\n\x04\x62lob\x18\x04 \x01(\x0c"`\n\x13ReadResourceRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\x12\x0b\n\x03uri\x18\x02 \x01(\t"\x98\x01\n\x14ReadResourceResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12\x41\n\x08resource\x18\x02 \x01(\x0b\x32/.third_party_py_mcp_grpc_proto.ResourceContents"\xae\x01\n\x10ResourceTemplate\x12\x14\n\x0curi_template\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\r\n\x05title\x18\x06 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x03 \x01(\t\x12\x11\n\tmime_type\x18\x04 \x01(\t\x12?\n\x0b\x61nnotations\x18\x05 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.Annotations"\\\n\x1cListResourceTemplatesRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields"\xd3\x01\n\x1dListResourceTemplatesResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12K\n\x12resource_templates\x18\x02 \x03(\x0b\x32/.third_party_py_mcp_grpc_proto.ResourceTemplate\x12&\n\x03ttl\x18\x03 \x01(\x0b\x32\x19.google.protobuf.Duration"e\n\x18ResourceSubscribeRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\x12\x0b\n\x03uri\x18\x02 \x01(\t"Z\n\x19ResourceSubscribeResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields"\xcd\x01\n\x06Prompt\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x04 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x41\n\targuments\x18\x03 \x03(\x0b\x32..third_party_py_mcp_grpc_proto.Prompt.Argument\x1aN\n\x08\x41rgument\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x04 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12\x10\n\x08required\x18\x03 \x01(\x08"R\n\x12ListPromptsRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields"\xb4\x01\n\x13ListPromptsResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12\x36\n\x07prompts\x18\x02 \x03(\x0b\x32%.third_party_py_mcp_grpc_proto.Prompt\x12&\n\x03ttl\x18\x03 \x01(\x0b\x32\x19.google.protobuf.Duration"\x96\x01\n\x10\x45mbeddedResource\x12\x41\n\x08\x63ontents\x18\x01 \x01(\x0b\x32/.third_party_py_mcp_grpc_proto.ResourceContents\x12?\n\x0b\x61nnotations\x18\x02 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.Annotations"\x80\x03\n\rPromptMessage\x12\x31\n\x04role\x18\x01 \x01(\x0e\x32#.third_party_py_mcp_grpc_proto.Role\x12\x38\n\x04text\x18\x02 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.TextContent\x12:\n\x05image\x18\x03 \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.ImageContent\x12:\n\x05\x61udio\x18\x04 \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.AudioContent\x12J\n\x11\x65mbedded_resource\x18\x05 \x01(\x0b\x32/.third_party_py_mcp_grpc_proto.EmbeddedResource\x12>\n\rresource_link\x18\x06 \x01(\x0b\x32\'.third_party_py_mcp_grpc_proto.Resource"\xe3\x01\n\x10GetPromptRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\x12\x0c\n\x04name\x18\x02 \x01(\t\x12Q\n\targuments\x18\x03 \x03(\x0b\x32>.third_party_py_mcp_grpc_proto.GetPromptRequest.ArgumentsEntry\x1a\x30\n\x0e\x41rgumentsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01"\xa7\x01\n\x11GetPromptResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12>\n\x08messages\x18\x03 \x03(\x0b\x32,.third_party_py_mcp_grpc_proto.PromptMessage"\x84\x01\n\x0fToolAnnotations\x12\r\n\x05title\x18\x01 \x01(\t\x12\x16\n\x0eread_only_hint\x18\x02 \x01(\x08\x12\x18\n\x10\x64\x65structive_hint\x18\x03 \x01(\x08\x12\x17\n\x0fidempotent_hint\x18\x04 \x01(\x08\x12\x17\n\x0fopen_world_hint\x18\x05 \x01(\x08"\xdc\x01\n\x04Tool\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x06 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x02 \x01(\t\x12-\n\x0cinput_schema\x18\x03 \x01(\x0b\x32\x17.google.protobuf.Struct\x12.\n\routput_schema\x18\x05 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x43\n\x0b\x61nnotations\x18\x04 \x01(\x0b\x32..third_party_py_mcp_grpc_proto.ToolAnnotations"P\n\x10ListToolsRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields"\xae\x01\n\x11ListToolsResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12\x32\n\x05tools\x18\x02 \x03(\x0b\x32#.third_party_py_mcp_grpc_proto.Tool\x12&\n\x03ttl\x18\x03 \x01(\x0b\x32\x19.google.protobuf.Duration"\xdd\x01\n\x0f\x43\x61llToolRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\x12G\n\x07request\x18\x02 \x01(\x0b\x32\x36.third_party_py_mcp_grpc_proto.CallToolRequest.Request\x1a\x43\n\x07Request\x12\x0c\n\x04name\x18\x01 \x01(\t\x12*\n\targuments\x18\x02 \x01(\x0b\x32\x17.google.protobuf.Struct"\xa9\x04\n\x10\x43\x61llToolResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12\x46\n\x06result\x18\x02 \x01(\x0b\x32\x36.third_party_py_mcp_grpc_proto.CallToolResponse.Result\x1a\x8d\x03\n\x06Result\x12\x38\n\x04text\x18\x01 \x01(\x0b\x32*.third_party_py_mcp_grpc_proto.TextContent\x12:\n\x05image\x18\x02 \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.ImageContent\x12:\n\x05\x61udio\x18\x03 \x01(\x0b\x32+.third_party_py_mcp_grpc_proto.AudioContent\x12J\n\x11\x65mbedded_resource\x18\x04 \x01(\x0b\x32/.third_party_py_mcp_grpc_proto.EmbeddedResource\x12>\n\rresource_link\x18\x07 \x01(\x0b\x32\'.third_party_py_mcp_grpc_proto.Resource\x12\x33\n\x12structured_content\x18\x06 \x01(\x0b\x32\x17.google.protobuf.Struct\x12\x10\n\x08is_error\x18\x05 \x01(\x08" \n\x11ResourceReference\x12\x0b\n\x03uri\x18\x01 \x01(\t".\n\x0fPromptReference\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t"\xc4\x04\n\x11\x43ompletionRequest\x12<\n\x06\x63ommon\x18\x01 \x01(\x0b\x32,.third_party_py_mcp_grpc_proto.RequestFields\x12L\n\x12resource_reference\x18\x02 \x01(\x0b\x32\x30.third_party_py_mcp_grpc_proto.ResourceReference\x12H\n\x10prompt_reference\x18\x03 \x01(\x0b\x32..third_party_py_mcp_grpc_proto.PromptReference\x12K\n\x08\x61rgument\x18\x04 \x01(\x0b\x32\x39.third_party_py_mcp_grpc_proto.CompletionRequest.Argument\x12I\n\x07\x63ontext\x18\x05 \x01(\x0b\x32\x38.third_party_py_mcp_grpc_proto.CompletionRequest.Context\x1a\'\n\x08\x41rgument\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t\x1a\x97\x01\n\x07\x43ontext\x12Z\n\targuments\x18\x01 \x03(\x0b\x32G.third_party_py_mcp_grpc_proto.CompletionRequest.Context.ArgumentsEntry\x1a\x30\n\x0e\x41rgumentsEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01"\x8c\x01\n\x12\x43ompletionResponse\x12=\n\x06\x63ommon\x18\x01 \x01(\x0b\x32-.third_party_py_mcp_grpc_proto.ResponseFields\x12\x0e\n\x06values\x18\x02 \x03(\t\x12\x15\n\rtotal_matches\x18\x03 \x01(\x03\x12\x10\n\x08has_more\x18\x04 \x01(\x08*R\n\x0fProtocolVersion\x12\x13\n\x0fVERSION_UNKNOWN\x10\x00\x12\x14\n\x10VERSION_20250326\x10\x01\x12\x14\n\x10VERSION_20250618\x10\x02*\xd2\x01\n\x08LogLevel\x12\x15\n\x11LOG_LEVEL_UNKNOWN\x10\x00\x12\x13\n\x0fLOG_LEVEL_DEBUG\x10\x01\x12\x12\n\x0eLOG_LEVEL_INFO\x10\x02\x12\x14\n\x10LOG_LEVEL_NOTICE\x10\x03\x12\x15\n\x11LOG_LEVEL_WARNING\x10\x04\x12\x13\n\x0fLOG_LEVEL_ERROR\x10\x05\x12\x16\n\x12LOG_LEVEL_CRITICAL\x10\x06\x12\x13\n\x0fLOG_LEVEL_ALERT\x10\x07\x12\x17\n\x13LOG_LEVEL_EMERGENCY\x10\x08*;\n\x04Role\x12\x10\n\x0cROLE_UNKNOWN\x10\x00\x12\r\n\tROLE_USER\x10\x01\x12\x12\n\x0eROLE_ASSISTANT\x10\x02\x32\xd2\x08\n\x03Mcp\x12z\n\rListResources\x12\x33.third_party_py_mcp_grpc_proto.ListResourcesRequest\x1a\x34.third_party_py_mcp_grpc_proto.ListResourcesResponse\x12w\n\x0cReadResource\x12\x32.third_party_py_mcp_grpc_proto.ReadResourceRequest\x1a\x33.third_party_py_mcp_grpc_proto.ReadResourceResponse\x12\x92\x01\n\x15ListResourceTemplates\x12;.third_party_py_mcp_grpc_proto.ListResourceTemplatesRequest\x1a<.third_party_py_mcp_grpc_proto.ListResourceTemplatesResponse\x12\x88\x01\n\x11ResourceSubscribe\x12\x37.third_party_py_mcp_grpc_proto.ResourceSubscribeRequest\x1a\x38.third_party_py_mcp_grpc_proto.ResourceSubscribeResponse0\x01\x12t\n\x0bListPrompts\x12\x31.third_party_py_mcp_grpc_proto.ListPromptsRequest\x1a\x32.third_party_py_mcp_grpc_proto.ListPromptsResponse\x12n\n\tGetPrompt\x12/.third_party_py_mcp_grpc_proto.GetPromptRequest\x1a\x30.third_party_py_mcp_grpc_proto.GetPromptResponse\x12n\n\tListTools\x12/.third_party_py_mcp_grpc_proto.ListToolsRequest\x1a\x30.third_party_py_mcp_grpc_proto.ListToolsResponse\x12o\n\x08\x43\x61llTool\x12..third_party_py_mcp_grpc_proto.CallToolRequest\x1a/.third_party_py_mcp_grpc_proto.CallToolResponse(\x01\x30\x01\x12o\n\x08\x43omplete\x12\x30.third_party_py_mcp_grpc_proto.CompletionRequest\x1a\x31.third_party_py_mcp_grpc_proto.CompletionResponseb\x06proto3'
+)
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'mcp_pb2', _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "mcp_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-  DESCRIPTOR._loaded_options = None
-  _globals['_ELICITREQUEST_REQUESTEDSCHEMAENTRY']._loaded_options = None
-  _globals['_ELICITREQUEST_REQUESTEDSCHEMAENTRY']._serialized_options = b'8\001'
-  _globals['_GETPROMPTREQUEST_ARGUMENTSENTRY']._loaded_options = None
-  _globals['_GETPROMPTREQUEST_ARGUMENTSENTRY']._serialized_options = b'8\001'
-  _globals['_COMPLETIONREQUEST_CONTEXT_ARGUMENTSENTRY']._loaded_options = None
-  _globals['_COMPLETIONREQUEST_CONTEXT_ARGUMENTSENTRY']._serialized_options = b'8\001'
-  _globals['_PROTOCOLVERSION']._serialized_start=9593
-  _globals['_PROTOCOLVERSION']._serialized_end=9675
-  _globals['_LOGLEVEL']._serialized_start=9678
-  _globals['_LOGLEVEL']._serialized_end=9888
-  _globals['_ROLE']._serialized_start=9890
-  _globals['_ROLE']._serialized_end=9949
-  _globals['_PROGRESSNOTIFICATION']._serialized_start=106
-  _globals['_PROGRESSNOTIFICATION']._serialized_end=202
-  _globals['_LOGMESSAGE']._serialized_start=204
-  _globals['_LOGMESSAGE']._serialized_end=330
-  _globals['_REQUESTFIELDS']._serialized_start=333
-  _globals['_REQUESTFIELDS']._serialized_end=881
-  _globals['_RESPONSEFIELDS']._serialized_start=884
-  _globals['_RESPONSEFIELDS']._serialized_end=1490
-  _globals['_ANNOTATIONS']._serialized_start=1492
-  _globals['_ANNOTATIONS']._serialized_end=1578
-  _globals['_TEXTCONTENT']._serialized_start=1580
-  _globals['_TEXTCONTENT']._serialized_end=1672
-  _globals['_IMAGECONTENT']._serialized_start=1674
-  _globals['_IMAGECONTENT']._serialized_end=1786
-  _globals['_AUDIOCONTENT']._serialized_start=1788
-  _globals['_AUDIOCONTENT']._serialized_end=1900
-  _globals['_LISTROOTSREQUEST']._serialized_start=1902
-  _globals['_LISTROOTSREQUEST']._serialized_end=1920
-  _globals['_LISTROOTSRESULT']._serialized_start=1922
-  _globals['_LISTROOTSRESULT']._serialized_end=2042
-  _globals['_LISTROOTSRESULT_ROOT']._serialized_start=2009
-  _globals['_LISTROOTSRESULT_ROOT']._serialized_end=2042
-  _globals['_SAMPLINGMESSAGE']._serialized_start=2045
-  _globals['_SAMPLINGMESSAGE']._serialized_end=2291
-  _globals['_SAMPLINGCREATEMESSAGEREQUEST']._serialized_start=2294
-  _globals['_SAMPLINGCREATEMESSAGEREQUEST']._serialized_end=2974
-  _globals['_SAMPLINGCREATEMESSAGEREQUEST_MODELPREFERENCES']._serialized_start=2686
-  _globals['_SAMPLINGCREATEMESSAGEREQUEST_MODELPREFERENCES']._serialized_end=2912
-  _globals['_SAMPLINGCREATEMESSAGEREQUEST_MODELPREFERENCES_MODELHINT']._serialized_start=2887
-  _globals['_SAMPLINGCREATEMESSAGEREQUEST_MODELPREFERENCES_MODELHINT']._serialized_end=2912
-  _globals['_SAMPLINGCREATEMESSAGEREQUEST_INCLUDECONTEXT']._serialized_start=2914
-  _globals['_SAMPLINGCREATEMESSAGEREQUEST_INCLUDECONTEXT']._serialized_end=2974
-  _globals['_SAMPLINGCREATEMESSAGERESULT']._serialized_start=2977
-  _globals['_SAMPLINGCREATEMESSAGERESULT']._serialized_end=3107
-  _globals['_PRIMITIVESCHEMADEFINITION']._serialized_start=3110
-  _globals['_PRIMITIVESCHEMADEFINITION']._serialized_end=4046
-  _globals['_PRIMITIVESCHEMADEFINITION_STRINGSCHEMA']._serialized_start=3514
-  _globals['_PRIMITIVESCHEMADEFINITION_STRINGSCHEMA']._serialized_end=3801
-  _globals['_PRIMITIVESCHEMADEFINITION_STRINGSCHEMA_FORMAT']._serialized_start=3700
-  _globals['_PRIMITIVESCHEMADEFINITION_STRINGSCHEMA_FORMAT']._serialized_end=3801
-  _globals['_PRIMITIVESCHEMADEFINITION_NUMBERSCHEMA']._serialized_start=3803
-  _globals['_PRIMITIVESCHEMADEFINITION_NUMBERSCHEMA']._serialized_end=3887
-  _globals['_PRIMITIVESCHEMADEFINITION_BOOLEANSCHEMA']._serialized_start=3889
-  _globals['_PRIMITIVESCHEMADEFINITION_BOOLEANSCHEMA']._serialized_end=3957
-  _globals['_PRIMITIVESCHEMADEFINITION_ENUMSCHEMA']._serialized_start=3959
-  _globals['_PRIMITIVESCHEMADEFINITION_ENUMSCHEMA']._serialized_end=4046
-  _globals['_ELICITREQUEST']._serialized_start=4049
-  _globals['_ELICITREQUEST']._serialized_end=4313
-  _globals['_ELICITREQUEST_REQUESTEDSCHEMAENTRY']._serialized_start=4201
-  _globals['_ELICITREQUEST_REQUESTEDSCHEMAENTRY']._serialized_end=4313
-  _globals['_ELICITRESULT']._serialized_start=4316
-  _globals['_ELICITRESULT']._serialized_end=4509
-  _globals['_ELICITRESULT_TYPE']._serialized_start=4438
-  _globals['_ELICITRESULT_TYPE']._serialized_end=4509
-  _globals['_RESOURCE']._serialized_start=4512
-  _globals['_RESOURCE']._serialized_end=4683
-  _globals['_LISTRESOURCESREQUEST']._serialized_start=4685
-  _globals['_LISTRESOURCESREQUEST']._serialized_end=4769
-  _globals['_LISTRESOURCESRESPONSE']._serialized_start=4772
-  _globals['_LISTRESOURCESRESPONSE']._serialized_end=4958
-  _globals['_RESOURCECONTENTS']._serialized_start=4960
-  _globals['_RESOURCECONTENTS']._serialized_end=5038
-  _globals['_READRESOURCEREQUEST']._serialized_start=5040
-  _globals['_READRESOURCEREQUEST']._serialized_end=5136
-  _globals['_READRESOURCERESPONSE']._serialized_start=5139
-  _globals['_READRESOURCERESPONSE']._serialized_end=5291
-  _globals['_RESOURCETEMPLATE']._serialized_start=5294
-  _globals['_RESOURCETEMPLATE']._serialized_end=5468
-  _globals['_LISTRESOURCETEMPLATESREQUEST']._serialized_start=5470
-  _globals['_LISTRESOURCETEMPLATESREQUEST']._serialized_end=5562
-  _globals['_LISTRESOURCETEMPLATESRESPONSE']._serialized_start=5565
-  _globals['_LISTRESOURCETEMPLATESRESPONSE']._serialized_end=5776
-  _globals['_RESOURCESUBSCRIBEREQUEST']._serialized_start=5778
-  _globals['_RESOURCESUBSCRIBEREQUEST']._serialized_end=5879
-  _globals['_RESOURCESUBSCRIBERESPONSE']._serialized_start=5881
-  _globals['_RESOURCESUBSCRIBERESPONSE']._serialized_end=5971
-  _globals['_PROMPT']._serialized_start=5974
-  _globals['_PROMPT']._serialized_end=6179
-  _globals['_PROMPT_ARGUMENT']._serialized_start=6101
-  _globals['_PROMPT_ARGUMENT']._serialized_end=6179
-  _globals['_LISTPROMPTSREQUEST']._serialized_start=6181
-  _globals['_LISTPROMPTSREQUEST']._serialized_end=6263
-  _globals['_LISTPROMPTSRESPONSE']._serialized_start=6266
-  _globals['_LISTPROMPTSRESPONSE']._serialized_end=6446
-  _globals['_EMBEDDEDRESOURCE']._serialized_start=6449
-  _globals['_EMBEDDEDRESOURCE']._serialized_end=6599
-  _globals['_PROMPTMESSAGE']._serialized_start=6602
-  _globals['_PROMPTMESSAGE']._serialized_end=6986
-  _globals['_GETPROMPTREQUEST']._serialized_start=6989
-  _globals['_GETPROMPTREQUEST']._serialized_end=7216
-  _globals['_GETPROMPTREQUEST_ARGUMENTSENTRY']._serialized_start=7168
-  _globals['_GETPROMPTREQUEST_ARGUMENTSENTRY']._serialized_end=7216
-  _globals['_GETPROMPTRESPONSE']._serialized_start=7219
-  _globals['_GETPROMPTRESPONSE']._serialized_end=7386
-  _globals['_TOOLANNOTATIONS']._serialized_start=7389
-  _globals['_TOOLANNOTATIONS']._serialized_end=7521
-  _globals['_TOOL']._serialized_start=7524
-  _globals['_TOOL']._serialized_end=7744
-  _globals['_LISTTOOLSREQUEST']._serialized_start=7746
-  _globals['_LISTTOOLSREQUEST']._serialized_end=7826
-  _globals['_LISTTOOLSRESPONSE']._serialized_start=7829
-  _globals['_LISTTOOLSRESPONSE']._serialized_end=8003
-  _globals['_CALLTOOLREQUEST']._serialized_start=8006
-  _globals['_CALLTOOLREQUEST']._serialized_end=8227
-  _globals['_CALLTOOLREQUEST_REQUEST']._serialized_start=8160
-  _globals['_CALLTOOLREQUEST_REQUEST']._serialized_end=8227
-  _globals['_CALLTOOLRESPONSE']._serialized_start=8230
-  _globals['_CALLTOOLRESPONSE']._serialized_end=8783
-  _globals['_CALLTOOLRESPONSE_RESULT']._serialized_start=8386
-  _globals['_CALLTOOLRESPONSE_RESULT']._serialized_end=8783
-  _globals['_RESOURCEREFERENCE']._serialized_start=8785
-  _globals['_RESOURCEREFERENCE']._serialized_end=8817
-  _globals['_PROMPTREFERENCE']._serialized_start=8819
-  _globals['_PROMPTREFERENCE']._serialized_end=8865
-  _globals['_COMPLETIONREQUEST']._serialized_start=8868
-  _globals['_COMPLETIONREQUEST']._serialized_end=9448
-  _globals['_COMPLETIONREQUEST_ARGUMENT']._serialized_start=9255
-  _globals['_COMPLETIONREQUEST_ARGUMENT']._serialized_end=9294
-  _globals['_COMPLETIONREQUEST_CONTEXT']._serialized_start=9297
-  _globals['_COMPLETIONREQUEST_CONTEXT']._serialized_end=9448
-  _globals['_COMPLETIONREQUEST_CONTEXT_ARGUMENTSENTRY']._serialized_start=7168
-  _globals['_COMPLETIONREQUEST_CONTEXT_ARGUMENTSENTRY']._serialized_end=7216
-  _globals['_COMPLETIONRESPONSE']._serialized_start=9451
-  _globals['_COMPLETIONRESPONSE']._serialized_end=9591
-  _globals['_MCP']._serialized_start=9952
-  _globals['_MCP']._serialized_end=11058
+    DESCRIPTOR._loaded_options = None
+    _globals["_ELICITREQUEST_REQUESTEDSCHEMAENTRY"]._loaded_options = None
+    _globals["_ELICITREQUEST_REQUESTEDSCHEMAENTRY"]._serialized_options = b"8\001"
+    _globals["_GETPROMPTREQUEST_ARGUMENTSENTRY"]._loaded_options = None
+    _globals["_GETPROMPTREQUEST_ARGUMENTSENTRY"]._serialized_options = b"8\001"
+    _globals["_COMPLETIONREQUEST_CONTEXT_ARGUMENTSENTRY"]._loaded_options = None
+    _globals["_COMPLETIONREQUEST_CONTEXT_ARGUMENTSENTRY"]._serialized_options = b"8\001"
+    _globals["_PROTOCOLVERSION"]._serialized_start = 9593
+    _globals["_PROTOCOLVERSION"]._serialized_end = 9675
+    _globals["_LOGLEVEL"]._serialized_start = 9678
+    _globals["_LOGLEVEL"]._serialized_end = 9888
+    _globals["_ROLE"]._serialized_start = 9890
+    _globals["_ROLE"]._serialized_end = 9949
+    _globals["_PROGRESSNOTIFICATION"]._serialized_start = 106
+    _globals["_PROGRESSNOTIFICATION"]._serialized_end = 202
+    _globals["_LOGMESSAGE"]._serialized_start = 204
+    _globals["_LOGMESSAGE"]._serialized_end = 330
+    _globals["_REQUESTFIELDS"]._serialized_start = 333
+    _globals["_REQUESTFIELDS"]._serialized_end = 881
+    _globals["_RESPONSEFIELDS"]._serialized_start = 884
+    _globals["_RESPONSEFIELDS"]._serialized_end = 1490
+    _globals["_ANNOTATIONS"]._serialized_start = 1492
+    _globals["_ANNOTATIONS"]._serialized_end = 1578
+    _globals["_TEXTCONTENT"]._serialized_start = 1580
+    _globals["_TEXTCONTENT"]._serialized_end = 1672
+    _globals["_IMAGECONTENT"]._serialized_start = 1674
+    _globals["_IMAGECONTENT"]._serialized_end = 1786
+    _globals["_AUDIOCONTENT"]._serialized_start = 1788
+    _globals["_AUDIOCONTENT"]._serialized_end = 1900
+    _globals["_LISTROOTSREQUEST"]._serialized_start = 1902
+    _globals["_LISTROOTSREQUEST"]._serialized_end = 1920
+    _globals["_LISTROOTSRESULT"]._serialized_start = 1922
+    _globals["_LISTROOTSRESULT"]._serialized_end = 2042
+    _globals["_LISTROOTSRESULT_ROOT"]._serialized_start = 2009
+    _globals["_LISTROOTSRESULT_ROOT"]._serialized_end = 2042
+    _globals["_SAMPLINGMESSAGE"]._serialized_start = 2045
+    _globals["_SAMPLINGMESSAGE"]._serialized_end = 2291
+    _globals["_SAMPLINGCREATEMESSAGEREQUEST"]._serialized_start = 2294
+    _globals["_SAMPLINGCREATEMESSAGEREQUEST"]._serialized_end = 2974
+    _globals["_SAMPLINGCREATEMESSAGEREQUEST_MODELPREFERENCES"]._serialized_start = 2686
+    _globals["_SAMPLINGCREATEMESSAGEREQUEST_MODELPREFERENCES"]._serialized_end = 2912
+    _globals["_SAMPLINGCREATEMESSAGEREQUEST_MODELPREFERENCES_MODELHINT"]._serialized_start = 2887
+    _globals["_SAMPLINGCREATEMESSAGEREQUEST_MODELPREFERENCES_MODELHINT"]._serialized_end = 2912
+    _globals["_SAMPLINGCREATEMESSAGEREQUEST_INCLUDECONTEXT"]._serialized_start = 2914
+    _globals["_SAMPLINGCREATEMESSAGEREQUEST_INCLUDECONTEXT"]._serialized_end = 2974
+    _globals["_SAMPLINGCREATEMESSAGERESULT"]._serialized_start = 2977
+    _globals["_SAMPLINGCREATEMESSAGERESULT"]._serialized_end = 3107
+    _globals["_PRIMITIVESCHEMADEFINITION"]._serialized_start = 3110
+    _globals["_PRIMITIVESCHEMADEFINITION"]._serialized_end = 4046
+    _globals["_PRIMITIVESCHEMADEFINITION_STRINGSCHEMA"]._serialized_start = 3514
+    _globals["_PRIMITIVESCHEMADEFINITION_STRINGSCHEMA"]._serialized_end = 3801
+    _globals["_PRIMITIVESCHEMADEFINITION_STRINGSCHEMA_FORMAT"]._serialized_start = 3700
+    _globals["_PRIMITIVESCHEMADEFINITION_STRINGSCHEMA_FORMAT"]._serialized_end = 3801
+    _globals["_PRIMITIVESCHEMADEFINITION_NUMBERSCHEMA"]._serialized_start = 3803
+    _globals["_PRIMITIVESCHEMADEFINITION_NUMBERSCHEMA"]._serialized_end = 3887
+    _globals["_PRIMITIVESCHEMADEFINITION_BOOLEANSCHEMA"]._serialized_start = 3889
+    _globals["_PRIMITIVESCHEMADEFINITION_BOOLEANSCHEMA"]._serialized_end = 3957
+    _globals["_PRIMITIVESCHEMADEFINITION_ENUMSCHEMA"]._serialized_start = 3959
+    _globals["_PRIMITIVESCHEMADEFINITION_ENUMSCHEMA"]._serialized_end = 4046
+    _globals["_ELICITREQUEST"]._serialized_start = 4049
+    _globals["_ELICITREQUEST"]._serialized_end = 4313
+    _globals["_ELICITREQUEST_REQUESTEDSCHEMAENTRY"]._serialized_start = 4201
+    _globals["_ELICITREQUEST_REQUESTEDSCHEMAENTRY"]._serialized_end = 4313
+    _globals["_ELICITRESULT"]._serialized_start = 4316
+    _globals["_ELICITRESULT"]._serialized_end = 4509
+    _globals["_ELICITRESULT_TYPE"]._serialized_start = 4438
+    _globals["_ELICITRESULT_TYPE"]._serialized_end = 4509
+    _globals["_RESOURCE"]._serialized_start = 4512
+    _globals["_RESOURCE"]._serialized_end = 4683
+    _globals["_LISTRESOURCESREQUEST"]._serialized_start = 4685
+    _globals["_LISTRESOURCESREQUEST"]._serialized_end = 4769
+    _globals["_LISTRESOURCESRESPONSE"]._serialized_start = 4772
+    _globals["_LISTRESOURCESRESPONSE"]._serialized_end = 4958
+    _globals["_RESOURCECONTENTS"]._serialized_start = 4960
+    _globals["_RESOURCECONTENTS"]._serialized_end = 5038
+    _globals["_READRESOURCEREQUEST"]._serialized_start = 5040
+    _globals["_READRESOURCEREQUEST"]._serialized_end = 5136
+    _globals["_READRESOURCERESPONSE"]._serialized_start = 5139
+    _globals["_READRESOURCERESPONSE"]._serialized_end = 5291
+    _globals["_RESOURCETEMPLATE"]._serialized_start = 5294
+    _globals["_RESOURCETEMPLATE"]._serialized_end = 5468
+    _globals["_LISTRESOURCETEMPLATESREQUEST"]._serialized_start = 5470
+    _globals["_LISTRESOURCETEMPLATESREQUEST"]._serialized_end = 5562
+    _globals["_LISTRESOURCETEMPLATESRESPONSE"]._serialized_start = 5565
+    _globals["_LISTRESOURCETEMPLATESRESPONSE"]._serialized_end = 5776
+    _globals["_RESOURCESUBSCRIBEREQUEST"]._serialized_start = 5778
+    _globals["_RESOURCESUBSCRIBEREQUEST"]._serialized_end = 5879
+    _globals["_RESOURCESUBSCRIBERESPONSE"]._serialized_start = 5881
+    _globals["_RESOURCESUBSCRIBERESPONSE"]._serialized_end = 5971
+    _globals["_PROMPT"]._serialized_start = 5974
+    _globals["_PROMPT"]._serialized_end = 6179
+    _globals["_PROMPT_ARGUMENT"]._serialized_start = 6101
+    _globals["_PROMPT_ARGUMENT"]._serialized_end = 6179
+    _globals["_LISTPROMPTSREQUEST"]._serialized_start = 6181
+    _globals["_LISTPROMPTSREQUEST"]._serialized_end = 6263
+    _globals["_LISTPROMPTSRESPONSE"]._serialized_start = 6266
+    _globals["_LISTPROMPTSRESPONSE"]._serialized_end = 6446
+    _globals["_EMBEDDEDRESOURCE"]._serialized_start = 6449
+    _globals["_EMBEDDEDRESOURCE"]._serialized_end = 6599
+    _globals["_PROMPTMESSAGE"]._serialized_start = 6602
+    _globals["_PROMPTMESSAGE"]._serialized_end = 6986
+    _globals["_GETPROMPTREQUEST"]._serialized_start = 6989
+    _globals["_GETPROMPTREQUEST"]._serialized_end = 7216
+    _globals["_GETPROMPTREQUEST_ARGUMENTSENTRY"]._serialized_start = 7168
+    _globals["_GETPROMPTREQUEST_ARGUMENTSENTRY"]._serialized_end = 7216
+    _globals["_GETPROMPTRESPONSE"]._serialized_start = 7219
+    _globals["_GETPROMPTRESPONSE"]._serialized_end = 7386
+    _globals["_TOOLANNOTATIONS"]._serialized_start = 7389
+    _globals["_TOOLANNOTATIONS"]._serialized_end = 7521
+    _globals["_TOOL"]._serialized_start = 7524
+    _globals["_TOOL"]._serialized_end = 7744
+    _globals["_LISTTOOLSREQUEST"]._serialized_start = 7746
+    _globals["_LISTTOOLSREQUEST"]._serialized_end = 7826
+    _globals["_LISTTOOLSRESPONSE"]._serialized_start = 7829
+    _globals["_LISTTOOLSRESPONSE"]._serialized_end = 8003
+    _globals["_CALLTOOLREQUEST"]._serialized_start = 8006
+    _globals["_CALLTOOLREQUEST"]._serialized_end = 8227
+    _globals["_CALLTOOLREQUEST_REQUEST"]._serialized_start = 8160
+    _globals["_CALLTOOLREQUEST_REQUEST"]._serialized_end = 8227
+    _globals["_CALLTOOLRESPONSE"]._serialized_start = 8230
+    _globals["_CALLTOOLRESPONSE"]._serialized_end = 8783
+    _globals["_CALLTOOLRESPONSE_RESULT"]._serialized_start = 8386
+    _globals["_CALLTOOLRESPONSE_RESULT"]._serialized_end = 8783
+    _globals["_RESOURCEREFERENCE"]._serialized_start = 8785
+    _globals["_RESOURCEREFERENCE"]._serialized_end = 8817
+    _globals["_PROMPTREFERENCE"]._serialized_start = 8819
+    _globals["_PROMPTREFERENCE"]._serialized_end = 8865
+    _globals["_COMPLETIONREQUEST"]._serialized_start = 8868
+    _globals["_COMPLETIONREQUEST"]._serialized_end = 9448
+    _globals["_COMPLETIONREQUEST_ARGUMENT"]._serialized_start = 9255
+    _globals["_COMPLETIONREQUEST_ARGUMENT"]._serialized_end = 9294
+    _globals["_COMPLETIONREQUEST_CONTEXT"]._serialized_start = 9297
+    _globals["_COMPLETIONREQUEST_CONTEXT"]._serialized_end = 9448
+    _globals["_COMPLETIONREQUEST_CONTEXT_ARGUMENTSENTRY"]._serialized_start = 7168
+    _globals["_COMPLETIONREQUEST_CONTEXT_ARGUMENTSENTRY"]._serialized_end = 7216
+    _globals["_COMPLETIONRESPONSE"]._serialized_start = 9451
+    _globals["_COMPLETIONRESPONSE"]._serialized_end = 9591
+    _globals["_MCP"]._serialized_start = 9952
+    _globals["_MCP"]._serialized_end = 11058
 # @@protoc_insertion_point(module_scope)

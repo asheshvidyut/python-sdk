@@ -35,8 +35,8 @@ def setup_test_server(port: int) -> FastMCP:
 
     @mcp.tool()
     def failing_tool():
-      """A tool that always fails."""
-      raise ValueError("This tool always fails")
+        """A tool that always fails."""
+        raise ValueError("This tool always fails")
 
     @mcp.tool()
     async def blocking_tool():
@@ -45,43 +45,51 @@ def setup_test_server(port: int) -> FastMCP:
 
     @mcp.tool()
     def get_image() -> types.ImageContent:
-      from PIL import Image as PILImage
-      img = PILImage.new('RGB', (1, 1), color = 'red')
-      buf = BytesIO()
-      img.save(buf, format='PNG')
-      return types.ImageContent(type="image", data=base64.b64encode(buf.getvalue()).decode("utf-8"), mimeType="image/png")
+        from PIL import Image as PILImage
+
+        img = PILImage.new("RGB", (1, 1), color="red")
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        return types.ImageContent(
+            type="image", data=base64.b64encode(buf.getvalue()).decode("utf-8"), mimeType="image/png"
+        )
 
     @mcp.tool()
     def get_audio() -> types.AudioContent:
-      return types.AudioContent(type="audio", data=base64.b64encode(b"fake wav data").decode("utf-8"), mimeType="audio/wav")
+        return types.AudioContent(
+            type="audio", data=base64.b64encode(b"fake wav data").decode("utf-8"), mimeType="audio/wav"
+        )
 
     @mcp.tool()
     def get_resource_link() -> types.ResourceLink:
-      return types.ResourceLink(name="resourcelink", type="resource_link", uri="test://example/link")
+        return types.ResourceLink(name="resourcelink", type="resource_link", uri="test://example/link")
 
     @mcp.tool()
     def get_embedded_text_resource() -> types.EmbeddedResource:
-      return types.EmbeddedResource(
-          type="resource",
-          resource=types.TextResourceContents(
-              uri="test://example/embeddedtext", mimeType="text/plain", text="some text"
-          ),
-      )
+        return types.EmbeddedResource(
+            type="resource",
+            resource=types.TextResourceContents(
+                uri="test://example/embeddedtext", mimeType="text/plain", text="some text"
+            ),
+        )
 
     @mcp.tool()
     def get_embedded_blob_resource() -> types.EmbeddedResource:
-      return types.EmbeddedResource(
-          type="resource",
-          resource=types.BlobResourceContents(
-              uri="test://example/embeddedblob", mimeType="application/octet-stream", blob=base64.b64encode(b"blobdata").decode("utf-8")
-          ),
-      )
+        return types.EmbeddedResource(
+            type="resource",
+            resource=types.BlobResourceContents(
+                uri="test://example/embeddedblob",
+                mimeType="application/octet-stream",
+                blob=base64.b64encode(b"blobdata").decode("utf-8"),
+            ),
+        )
 
     @mcp.tool()
     def get_untyped_object() -> dict:
         class UntypedObject:
             def __str__(self):
                 return "UntypedObject()"
+
         return {"result": str(UntypedObject())}
 
     return mcp
@@ -110,9 +118,7 @@ def server_port() -> int:
 async def grpc_server(server_port: int) -> Generator[None, None, None]:
     """Start a gRPC server in process."""
     server_instance = setup_test_server(server_port)
-    server = await create_mcp_grpc_server(
-        target=f"127.0.0.1:{server_port}", mcp_server=server_instance
-    )
+    server = await create_mcp_grpc_server(target=f"127.0.0.1:{server_port}", mcp_server=server_instance)
 
     yield server
 
@@ -125,9 +131,7 @@ async def grpc_server(server_port: int) -> Generator[None, None, None]:
 async def empty_grpc_server(server_port: int) -> Generator[None, None, None]:
     """Start a gRPC server in process with no tools."""
     server_instance = setup_empty_test_server(server_port)
-    server = await create_mcp_grpc_server(
-        target=f"127.0.0.1:{server_port}", mcp_server=server_instance
-    )
+    server = await create_mcp_grpc_server(target=f"127.0.0.1:{server_port}", mcp_server=server_instance)
 
     yield server
 
@@ -292,38 +296,91 @@ async def test_list_tools_grpc_transport_failure(server_port: int):
         (
             "get_image",
             {},
-            [{"type": "image", "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC", "mimeType": "image/png"},
-             {"type": "image", "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC", "mimeType": "image/png"}],
-            {'data': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC', 'mimeType': 'image/png', 'annotations': None, '_meta': None, 'type': 'image'},
+            [
+                {
+                    "type": "image",
+                    "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+                    "mimeType": "image/png",
+                },
+                {
+                    "type": "image",
+                    "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+                    "mimeType": "image/png",
+                },
+            ],
+            {
+                "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+                "mimeType": "image/png",
+                "annotations": None,
+                "_meta": None,
+                "type": "image",
+            },
         ),
         (
             "get_audio",
             {},
-            [{"type": "audio", "data": base64.b64encode(b"fake wav data").decode("utf-8"), "mimeType": "audio/wav"},
-             {"type": "audio", "data": base64.b64encode(b"fake wav data").decode("utf-8"), "mimeType": "audio/wav"}],
-            {'data': 'ZmFrZSB3YXYgZGF0YQ==', 'mimeType': 'audio/wav', 'annotations': None, '_meta': None, 'type': 'audio'},
+            [
+                {"type": "audio", "data": base64.b64encode(b"fake wav data").decode("utf-8"), "mimeType": "audio/wav"},
+                {"type": "audio", "data": base64.b64encode(b"fake wav data").decode("utf-8"), "mimeType": "audio/wav"},
+            ],
+            {
+                "data": "ZmFrZSB3YXYgZGF0YQ==",
+                "mimeType": "audio/wav",
+                "annotations": None,
+                "_meta": None,
+                "type": "audio",
+            },
         ),
         (
             "get_resource_link",
             {},
-            [{"type": "resource_link", "uri": "test://example/link", "name": "resourcelink"},
-             {"type": "resource_link", "uri": "test://example/link", "name": "resourcelink"}],
-            {'name': 'resourcelink', 'title': None, 'uri': 'test://example/link', 'description': None, 'mimeType': None, 'size': None, 'annotations': None, '_meta': None, 'type': 'resource_link'},
+            [
+                {"type": "resource_link", "uri": "test://example/link", "name": "resourcelink"},
+                {"type": "resource_link", "uri": "test://example/link", "name": "resourcelink"},
+            ],
+            {
+                "name": "resourcelink",
+                "title": None,
+                "uri": "test://example/link",
+                "description": None,
+                "mimeType": None,
+                "size": None,
+                "annotations": None,
+                "_meta": None,
+                "type": "resource_link",
+            },
         ),
         (
             "get_embedded_text_resource",
             {},
-            [{
-                "type": "resource",
-                "resource": {"type": "text", "uri": "test://example/embeddedtext", "mimeType": "text/plain", "text": "some text"},
-            },
+            [
+                {
+                    "type": "resource",
+                    "resource": {
+                        "type": "text",
+                        "uri": "test://example/embeddedtext",
+                        "mimeType": "text/plain",
+                        "text": "some text",
+                    },
+                },
+                {
+                    "type": "resource",
+                    "resource": {
+                        "type": "text",
+                        "uri": "test://example/embeddedtext",
+                        "mimeType": "text/plain",
+                        "text": "some text",
+                    },
+                },
+            ],
             {
                 "type": "resource",
-                "resource": {"type": "text", "uri": "test://example/embeddedtext", "mimeType": "text/plain", "text": "some text"},
-            }],
-            {
-                "type": "resource",
-                "resource": {"uri": "test://example/embeddedtext", "mimeType": "text/plain", "text": "some text", "_meta": None},
+                "resource": {
+                    "uri": "test://example/embeddedtext",
+                    "mimeType": "text/plain",
+                    "text": "some text",
+                    "_meta": None,
+                },
                 "annotations": None,
                 "_meta": None,
             },
@@ -331,17 +388,34 @@ async def test_list_tools_grpc_transport_failure(server_port: int):
         (
             "get_embedded_blob_resource",
             {},
-            [{
-                "type": "resource",
-                "resource": {"type": "blob", "uri": "test://example/embeddedblob", "mimeType": "application/octet-stream", "blob": base64.b64encode(b"blobdata").decode("utf-8")},
-            },
+            [
+                {
+                    "type": "resource",
+                    "resource": {
+                        "type": "blob",
+                        "uri": "test://example/embeddedblob",
+                        "mimeType": "application/octet-stream",
+                        "blob": base64.b64encode(b"blobdata").decode("utf-8"),
+                    },
+                },
+                {
+                    "type": "resource",
+                    "resource": {
+                        "type": "blob",
+                        "uri": "test://example/embeddedblob",
+                        "mimeType": "application/octet-stream",
+                        "blob": base64.b64encode(b"blobdata").decode("utf-8"),
+                    },
+                },
+            ],
             {
                 "type": "resource",
-                "resource": {"type": "blob", "uri": "test://example/embeddedblob", "mimeType": "application/octet-stream", "blob": base64.b64encode(b"blobdata").decode("utf-8")},
-            }],
-            {
-                "type": "resource",
-                "resource": {"uri": "test://example/embeddedblob", "mimeType": "application/octet-stream", "blob": base64.b64encode(b"blobdata").decode("utf-8"), "_meta": None},
+                "resource": {
+                    "uri": "test://example/embeddedblob",
+                    "mimeType": "application/octet-stream",
+                    "blob": base64.b64encode(b"blobdata").decode("utf-8"),
+                    "_meta": None,
+                },
                 "annotations": None,
                 "_meta": None,
             },
@@ -439,7 +513,7 @@ async def test_send_notification_cancel(grpc_server: None, server_port: int):
         )
 
         call_tool_task = asyncio.create_task(transport.call_tool("blocking_tool", {}))
-        await asyncio.sleep(0.2) # give call_tool time to start and populate _running_calls
+        await asyncio.sleep(0.2)  # give call_tool time to start and populate _running_calls
         await transport.send_notification(cancel_notification)
 
         with pytest.raises(McpError) as e:

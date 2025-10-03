@@ -19,8 +19,7 @@ class TransportSession(ABC):
         ...
 
     @abstractmethod
-    async def send_ping(self):
-        ...
+    async def send_ping(self): ...
 
     @abstractmethod
     async def send_progress_notification(
@@ -29,8 +28,7 @@ class TransportSession(ABC):
         progress: float,
         total: float | None = None,
         message: str | None = None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
     @abstractmethod
     async def set_logging_level(

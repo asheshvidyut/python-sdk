@@ -5,6 +5,7 @@ from mcp.server.fastmcp import FastMCP
 
 logger = logging.getLogger(__name__)
 
+
 async def main():
     """Run the gRPC server."""
     logging.basicConfig(
@@ -32,6 +33,7 @@ async def main():
 
     mcp.run(transport="grpc")
     logger.info("gRPC server started on 127.0.0.1:50051")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
