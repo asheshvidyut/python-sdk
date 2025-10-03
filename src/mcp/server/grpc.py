@@ -6,19 +6,18 @@ This module provides a gRPC transport for MCP servers.
 
 import asyncio
 import logging
-from typing import AsyncIterator, Sequence
+from collections.abc import AsyncIterator
 
-from google.protobuf import json_format
 import grpc
+from google.protobuf import json_format
 from grpc import aio
 from grpc_reflection.v1alpha import reflection
+
 from mcp import types
-from mcp.proto import mcp_pb2
-from mcp.proto import mcp_pb2_grpc
+from mcp.proto import mcp_pb2, mcp_pb2_grpc
 from mcp.server.grpc_session import GrpcSession
 from mcp.server.lowlevel.server import RequestContext
 from mcp.shared import convert
-
 
 logger = logging.getLogger(__name__)
 

@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 
 import anyio
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
+from mcp_grpc.client.grpc_transport_session import GRPCTransportSession
 
 import mcp.types as types
 from mcp.client.session import ClientSession
@@ -13,7 +14,6 @@ from mcp.client.sse import sse_client
 from mcp.client.stdio import StdioServerParameters, stdio_client
 from mcp.shared.message import SessionMessage
 from mcp.shared.session import RequestResponder
-from mcp_grpc.client.grpc_transport_session import GRPCTransportSession
 
 if not sys.warnoptions:
     import warnings

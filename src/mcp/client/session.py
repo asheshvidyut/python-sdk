@@ -1,30 +1,25 @@
 import logging
 from datetime import timedelta
-from typing import Any, Protocol
+from typing import Any
 
 import anyio.lowlevel
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
-from jsonschema import SchemaError, ValidationError, validate
 from pydantic import AnyUrl, TypeAdapter
 
 import mcp.types as types
+from mcp.client.session_common import (
+    ElicitationFnT,
+    ListRootsFnT,
+    LoggingFnT,
+    MessageHandlerFnT,
+    SamplingFnT,
+    _validate_tool_result,
+)
+from mcp.client.transport_session import TransportSession
 from mcp.shared.context import RequestContext
 from mcp.shared.message import SessionMessage
 from mcp.shared.session import BaseSession, ProgressFnT, RequestResponder
 from mcp.shared.version import SUPPORTED_PROTOCOL_VERSIONS
-
-from anyio.streams.memory import MemoryObjectReceiveStream
-from anyio.streams.memory import MemoryObjectSendStream
-from jsonschema import SchemaError
-from jsonschema import validate
-from jsonschema import ValidationError
-from mcp.client.session_common import _validate_tool_result
-from mcp.client.session_common import ElicitationFnT
-from mcp.client.session_common import ListRootsFnT
-from mcp.client.session_common import LoggingFnT
-from mcp.client.session_common import MessageHandlerFnT
-from mcp.client.session_common import SamplingFnT
-from mcp.client.transport_session import TransportSession
 
 DEFAULT_CLIENT_INFO = types.Implementation(name="mcp", version="0.1.0")
 

@@ -2,15 +2,14 @@
 
 import unittest
 import unittest.mock
+
 import pytest
+from google.protobuf import json_format, struct_pb2
 
-from google.protobuf import json_format
-from google.protobuf import struct_pb2
-
-from mcp.shared import convert
-from mcp.shared.exceptions import McpError
 from mcp import types
 from mcp.proto import mcp_pb2
+from mcp.shared import convert
+from mcp.shared.exceptions import McpError
 
 
 def test_tool_proto_to_type_valid():

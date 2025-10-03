@@ -130,6 +130,7 @@ mccabe.max-complexity = 24  # Default is 10
 "__init__.py" = ["F401"]
 "tests/server/fastmcp/test_func_metadata.py" = ["E501"]
 "tests/shared/test_progress_notifications.py" = ["PLW0603"]
+"src/mcp/proto/mcp_pb2.py" = ["E501"]
 
 [tool.ruff.lint.pylint]
 allow-magic-value-types = ["bytes", "float", "int", "str"]

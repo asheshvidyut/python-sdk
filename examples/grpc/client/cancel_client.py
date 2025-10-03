@@ -1,7 +1,8 @@
 import asyncio
 import logging
-from mcp.client.grpc_transport_session import GRPCTransportSession
+
 from mcp import types
+from mcp.client.grpc_transport_session import GRPCTransportSession
 from mcp.shared.exceptions import McpError
 
 logger = logging.getLogger(__name__)
