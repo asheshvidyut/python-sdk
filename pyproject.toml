@@ -130,7 +130,7 @@ mccabe.max-complexity = 24  # Default is 10
 "__init__.py" = ["F401"]
 "tests/server/fastmcp/test_func_metadata.py" = ["E501"]
 "tests/shared/test_progress_notifications.py" = ["PLW0603"]
-"src/mcp/proto/mcp_pb2.py" = ["E501", "UP007", "UP045", "UP004", "UP035", "F401", "I001"]
+"src/mcp/proto/mcp_pb2.py" = ["E501", "UP007", "UP045", "UP004", "UP035", "F401", "I001", "E402"]
 "src/mcp/proto/mcp_pb2.pyi" = ["UP007", "UP045", "UP004", "UP035", "F401", "I001"]
 "src/mcp/proto/mcp_pb2_grpc.py" = ["UP007", "UP045", "UP004", "UP035", "F401", "I001"]
 
