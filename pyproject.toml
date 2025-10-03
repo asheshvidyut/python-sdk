@@ -65,6 +65,11 @@ dev = [
     "inline-snapshot>=0.23.0",
     "dirty-equals>=0.9.0",
 ]
+test = [
+    "grpcio>=1.74.0",
+    "protobuf>=6.32.0",
+    "grpcio-reflection>=1.74.0"
+]
 docs = [
     "mkdocs>=1.6.1",
     "mkdocs-glightbox>=0.4.0",
