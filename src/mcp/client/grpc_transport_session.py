@@ -5,8 +5,6 @@ import asyncio
 import grpc
 from grpc import aio
 from google.protobuf import json_format
-from jsonschema import ValidationError, SchemaError
-from jsonschema.validators import validate
 
 from mcp import types
 from mcp.client.session_common import ElicitationFnT
