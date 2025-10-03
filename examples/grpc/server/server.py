@@ -115,7 +115,7 @@ def setup_server(port: int) -> FastMCP:
 
       # Simulate chunk download
       chunk = min(chunk_size, total_bytes - downloaded)
-      downloaded = chunk
+      downloaded += chunk
 
     print("🔄 Sending final progress: 100% - Download completed")
     await ctx.report_progress(
