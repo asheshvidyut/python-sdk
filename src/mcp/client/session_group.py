@@ -232,7 +232,7 @@ class ClientSessionGroup:
 
     async def _establish_session(
         self, server_params: ServerParameters
-    ) -> tuple[types.Implementation, mcp.TransportSession]:
+    ) -> tuple[types.Implementation, mcp.ClientSession]:
         """Establish a client session to an MCP server."""
 
         session_stack = contextlib.AsyncExitStack()
@@ -259,7 +259,7 @@ class ClientSessionGroup:
                 )
                 read, write, _ = await session_stack.enter_async_context(client)
 
-            session = await session_stack.enter_async_context(mcp.TransportSession(read, write))
+            session = await session_stack.enter_async_context(mcp.ClientSession(read, write))
             result = await session.initialize()
 
             # Session successfully initialized.
