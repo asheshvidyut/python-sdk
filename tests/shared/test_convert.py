@@ -521,7 +521,7 @@ def test_tool_output_to_proto_is_error_with_structured_content():
   assert len(converted_proto) == 1
   assert converted_proto[0].is_error is True
   assert converted_proto[0].structured_content == json_format.ParseDict(
-      {"key": "value"}, struct_pb2.struct_pb2.Struct().struct_pb2.Struct()
+      {"key": "value"}, struct_pb2.Struct()
   )
 
 
