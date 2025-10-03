@@ -8,9 +8,7 @@ from jsonschema import SchemaError, ValidationError, validate
 from pydantic import AnyUrl, TypeAdapter
 
 import mcp.types as types
-from mcp.types import ErrorData
 from mcp.shared.context import RequestContext
-from mcp.shared.exceptions import McpError
 from mcp.shared.message import SessionMessage
 from mcp.shared.session import BaseSession, ProgressFnT, RequestResponder
 from mcp.shared.version import SUPPORTED_PROTOCOL_VERSIONS
@@ -271,14 +269,7 @@ class ClientSession(
         )
 
         if not result.isError:
-            try:
-                await self._validate_tool_result(name, result)
-            except RuntimeError as e:
-                error_message = f'Tool result validation failed for "{name}": {e}'
-                logger.error(error_message, exc_info=True)
-                raise McpError(
-                    ErrorData(code=types.INTERNAL_ERROR, message=error_message)
-                ) from e
+            await self._validate_tool_result(name, result)
 
         return result
 
@@ -293,6 +284,8 @@ class ClientSession(
             await _validate_tool_result(output_schema, name, result)
         else:
             logger.warning(f"Tool {name} not listed by server, cannot validate any structured content")
+
+        raise RuntimeError(f"Invalid schema for tool {name}: {e}")
 
     async def list_prompts(self, cursor: str | None = None) -> types.ListPromptsResult:
         """Send a prompts/list request."""
