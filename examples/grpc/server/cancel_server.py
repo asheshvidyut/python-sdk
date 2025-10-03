@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 async def main():
-    """Run the gRPC server."""
+    """Run the gRPC server"""
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
