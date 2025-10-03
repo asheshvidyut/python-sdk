@@ -127,13 +127,11 @@ def _is_content_block(item: Any) -> bool:
     """Check if an item looks like a content block."""
     if isinstance(
         item,
-        (
-            types.TextContent,
-            types.ImageContent,
-            types.AudioContent,
-            types.EmbeddedResource,
-            types.ResourceLink,
-        ),
+        types.TextContent
+        | types.ImageContent
+        | types.AudioContent
+        | types.EmbeddedResource
+        | types.ResourceLink,
     ):
         return True
     if hasattr(item, "model_dump"):
