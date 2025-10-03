@@ -176,7 +176,7 @@ class GRPCTransportSession(TransportSession):
         progress_callback: ProgressFnT | None = None,
     ) -> types.CallToolResult:
         """Send a tools/call request with optional progress callback support."""
-        self._request_counter = 1
+        self._request_counter += 1
         request_id = self._request_counter
 
         if progress_callback:
