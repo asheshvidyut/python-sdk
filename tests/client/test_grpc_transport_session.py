@@ -292,9 +292,9 @@ async def test_list_tools_grpc_transport_failure(server_port: int):
         (
             "get_image",
             {},
-            [{"type": "image", "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4XmP4z8AAAAMBAQAwOwdeAAAAAElFTkSuQmCC", "mimeType": "image/png"},
-             {"type": "image", "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4XmP4z8AAAAMBAQAwOwdeAAAAAElFTkSuQmCC", "mimeType": "image/png"}],
-            {'data': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4XmP4z8AAAAMBAQAwOwdeAAAAAElFTkSuQmCC', 'mimeType': 'image/png', 'annotations': None, '_meta': None, 'type': 'image'},
+            [{"type": "image", "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC", "mimeType": "image/png"},
+             {"type": "image", "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC", "mimeType": "image/png"}],
+            {'data': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC', 'mimeType': 'image/png', 'annotations': None, '_meta': None, 'type': 'image'},
         ),
         (
             "get_audio",

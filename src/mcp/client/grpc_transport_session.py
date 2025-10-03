@@ -265,14 +265,7 @@ class GRPCTransportSession(TransportSession):
         # TODO(asheshvidyut): check and verify all the error handling cases
         # b/448303754
         if not final_result.isError:
-            try:
-                await self._validate_tool_result(name, final_result)
-            except RuntimeError as e:
-                error_message = f'Tool result validation failed for "{name}": {e}'
-                logger.error(error_message, exc_info=True)
-                raise McpError(
-                    ErrorData(code=types.INTERNAL_ERROR, message=error_message)
-                ) from e
+            await self._validate_tool_result(name, final_result)
         return final_result
 
     async def _validate_tool_result(self, name: str,
