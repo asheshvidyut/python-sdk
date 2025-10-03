@@ -8,23 +8,23 @@ from google.protobuf import json_format
 from jsonschema import ValidationError, SchemaError
 from jsonschema.validators import validate
 
-from mcp_grpc import types
-from mcp_grpc.client.session_common import ElicitationFnT
-from mcp_grpc.client.session_common import ListRootsFnT
-from mcp_grpc.client.session_common import LoggingFnT
-from mcp_grpc.client.session_common import MessageHandlerFnT
-from mcp_grpc.client.session_common import SamplingFnT
-from mcp_grpc.client.session_common import _validate_tool_result
-from mcp_grpc.client.transport_session import TransportSession
-from mcp_grpc.proto import mcp_pb2
-from mcp_grpc.proto import mcp_pb2_grpc
-from mcp_grpc.shared import convert
-from mcp_grpc.shared.exceptions import McpError
+from mcp import types
+from mcp.client.session_common import ElicitationFnT
+from mcp.client.session_common import ListRootsFnT
+from mcp.client.session_common import LoggingFnT
+from mcp.client.session_common import MessageHandlerFnT
+from mcp.client.session_common import SamplingFnT
+from mcp.client.session_common import _validate_tool_result
+from mcp.client.transport_session import TransportSession
+from mcp.proto import mcp_pb2
+from mcp.proto import mcp_pb2_grpc
+from mcp.shared import convert
+from mcp.shared.exceptions import McpError
 
 from typing import Any
 
-from mcp_grpc.shared.session import ProgressFnT
-from mcp_grpc.types import ErrorData
+from mcp.shared.session import ProgressFnT
+from mcp.types import ErrorData
 from pydantic import AnyUrl
 
 
