@@ -1,10 +1,11 @@
 import asyncio
 import logging
 
-from mcp_grpc.server.fastmcp import FastMCP
-from mcp_grpc.server.grpc import create_mcp_grpc_server
+from mcp.server.fastmcp import FastMCP
+from mcp.server.grpc import create_mcp_grpc_server
 
 logger = logging.getLogger(__name__)
+
 
 async def main():
     """Run the gRPC server."""
@@ -38,6 +39,7 @@ async def main():
     except KeyboardInterrupt:
         await server.stop(grace=1)
     logger.info("gRPC server stopped")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
