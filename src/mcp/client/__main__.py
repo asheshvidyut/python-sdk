@@ -84,7 +84,10 @@ def cli():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "command_or_url",
-        help="Command or URL to connect to (e.g., http://..., https://..., grpc://host:port, host:port for gRPC, or a command)",
+        help=(
+            "Command or URL to connect to (e.g., http://..., https://..., "
+            "grpc://host:port, host:port for gRPC, or a command)"
+        ),
     )
     parser.add_argument("args", nargs="*", help="Additional arguments")
     parser.add_argument(

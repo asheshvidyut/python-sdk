@@ -276,7 +276,7 @@ async def test_call_tool_grpc_greet(grpc_server: None, grpc_stub: mcp_pb2_grpc.M
 
     responses = []
     async for response in grpc_stub.CallTool(request_iterator()):
-        responses.append(response)
+        responses.append(response)  # noqa: PERF401
 
     assert len(responses) == 2
     assert responses[0].result.text.text == "Hello, Test! Welcome to the Simple gRPC Server!"
@@ -301,7 +301,7 @@ async def test_call_tool_grpc_test_tool(grpc_server: None, grpc_stub: mcp_pb2_gr
 
     responses = []
     async for response in grpc_stub.CallTool(request_iterator()):
-        responses.append(response)
+        responses.append(response)  # noqa: PERF401
 
     assert len(responses) == 2
     assert responses[0].result.text.text == "3"
@@ -326,7 +326,7 @@ async def test_call_failing_tool_grpc(grpc_server: None, grpc_stub: mcp_pb2_grpc
 
     responses = []
     async for response in grpc_stub.CallTool(request_iterator()):
-        responses.append(response)
+        responses.append(response)  # noqa: PERF401
 
     assert len(responses) == 1
     assert responses[0].result.is_error
@@ -349,7 +349,7 @@ async def test_call_tool_grpc_list_tool(grpc_server: None, grpc_stub: mcp_pb2_gr
 
     responses = []
     async for response in grpc_stub.CallTool(request_iterator()):
-        responses.append(response)
+        responses.append(response)  # noqa: PERF401
 
     assert len(responses) == 3
     assert responses[0].result.text.text == "one"
@@ -371,7 +371,7 @@ async def test_call_tool_grpc_no_initial_request(grpc_server: None, grpc_stub: m
 
     responses = []
     async for response in grpc_stub.CallTool(request_iterator()):
-        responses.append(response)
+        responses.append(response)  # noqa: PERF401
 
     assert len(responses) == 1
     assert responses[0].result.is_error
@@ -394,7 +394,7 @@ async def test_call_tool_grpc_dict_tool(grpc_server: None, grpc_stub: mcp_pb2_gr
 
     responses = []
     async for response in grpc_stub.CallTool(request_iterator()):
-        responses.append(response)
+        responses.append(response)  # noqa: PERF401
 
     assert len(responses) == 1
     assert json.loads(responses[0].result.text.text) == {"key": "value"}

@@ -4,6 +4,7 @@ from jsonschema import SchemaError, ValidationError
 from jsonschema.validators import validate
 
 import mcp.types as types
+from mcp.client.transport_session import TransportSession
 from mcp.shared.context import RequestContext
 from mcp.shared.session import RequestResponder
 
