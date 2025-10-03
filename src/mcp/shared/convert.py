@@ -210,7 +210,7 @@ def _handle_dict_tool_output(tool_output: dict):
         return None
 
 
-def tool_output_to_proto(
+def tool_output_to_proto(  # noqa: PLR0911
     tool_output: Any,
 ) -> list[mcp_pb2.CallToolResponse.Result]:
     """Converts tool output to a list of CallToolResponse.Result protos."""

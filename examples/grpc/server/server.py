@@ -5,16 +5,9 @@ This module provides a complete MCP server example using gRPC transport.
 Can be used both as an educational example and a practical working server.
 """
 
-import logging
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-)
-
 import argparse
 import asyncio
+import logging
 from io import BytesIO
 from typing import Annotated, TypedDict
 
@@ -23,6 +16,12 @@ from pydantic import BaseModel, Field
 from mcp.server.fastmcp import Context, FastMCP
 from mcp.server.fastmcp.utilities.types import Image
 from mcp.server.session import ServerSession
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 
 class ShrimpTank(BaseModel):
