@@ -33,7 +33,6 @@ async def main():
             return "Tool was cancelled"
 
     server = await create_mcp_grpc_server(target="127.0.0.1:50051", mcp_server=mcp)
-    logger.info("gRPC server started on 127.0.0.1:50051")
     try:
         await server.wait_for_termination()
     except KeyboardInterrupt:
