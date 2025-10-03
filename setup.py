@@ -1,4 +1,3 @@
-
 from setuptools.command.build_py import build_py as _build_py
 
 # The content you want to write into the file
