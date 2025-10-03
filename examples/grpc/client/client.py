@@ -13,6 +13,7 @@ import argparse
 
 logging.basicConfig(level=logging.INFO)
 
+
 async def main(host="localhost", port=50051):
     """Run the client example using MCPClient class."""
     session = GRPCTransportSession(target=f"{host}:{port}")
@@ -26,7 +27,7 @@ async def main(host="localhost", port=50051):
 
         async def progress_callback(progress: float, total: float | None, message: str | None):
             if total:
-                print(f"Progress: {progress/total*100:.2f}% - {message}")
+                print(f"Progress: {progress / total * 100:.2f}% - {message}")
             else:
                 print(f"Progress: {progress} - {message}")
 
@@ -40,19 +41,13 @@ async def main(host="localhost", port=50051):
         print("-------------------------------------------\n")
 
         print("--- Calling tools with structured output ---")
-        weather = await session.call_tool(
-            "get_weather", {"city": "London"}
-        )
+        weather = await session.call_tool("get_weather", {"city": "London"})
         print(f"Weather in London: {weather}")
 
-        location = await session.call_tool(
-            "get_location", {"address": "1600 Amphitheatre Parkway"}
-        )
+        location = await session.call_tool("get_location", {"address": "1600 Amphitheatre Parkway"})
         print(f"Location: {location}")
 
-        stats = await session.call_tool(
-            "get_statistics", {"data_type": "sales"}
-        )
+        stats = await session.call_tool("get_statistics", {"data_type": "sales"})
         print(f"Statistics: {stats}")
 
         user = await session.call_tool("get_user", {"user_id": "123"})
@@ -89,23 +84,9 @@ async def main(host="localhost", port=50051):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="MCP gRPC Client with MCPClient Class"
-    )
-    parser.add_argument(
-        "--host",
-        default="localhost",
-        help="Server host (default: localhost)"
-    )
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=50051,
-        help="Server port (default: 50051)"
-    )
+    parser = argparse.ArgumentParser(description="MCP gRPC Client with MCPClient Class")
+    parser.add_argument("--host", default="localhost", help="Server host (default: localhost)")
+    parser.add_argument("--port", type=int, default=50051, help="Server port (default: 50051)")
     args = parser.parse_args()
 
-    asyncio.run(main(
-        host=args.host,
-        port=args.port
-    ))
+    asyncio.run(main(host=args.host, port=args.port))

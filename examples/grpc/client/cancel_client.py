@@ -6,6 +6,7 @@ from mcp.shared.exceptions import McpError
 
 logger = logging.getLogger(__name__)
 
+
 async def main():
     """Run the gRPC client."""
     logging.basicConfig(level=logging.INFO)
@@ -13,12 +14,8 @@ async def main():
 
     try:
         logger.info("Calling long_running_tool twice")
-        call_tool_task1 = asyncio.create_task(
-            transport.call_tool("long_running_tool", {})
-        )
-        call_tool_task2 = asyncio.create_task(
-            transport.call_tool("long_running_tool", {})
-        )
+        call_tool_task1 = asyncio.create_task(transport.call_tool("long_running_tool", {}))
+        call_tool_task2 = asyncio.create_task(transport.call_tool("long_running_tool", {}))
 
         # Allow some time for the calls to start
         await asyncio.sleep(1)
@@ -74,6 +71,7 @@ async def main():
     finally:
         await transport.close()
         logger.info("Connection closed")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -47,29 +47,29 @@ class GRPCTransportSession(TransportSession):
         client_info: types.Implementation | None = None,
         **kwargs,
     ) -> None:
-      """Initialize the gRPC transport session."""
-      logger.info("Creating GRPCTransportSession for target: %s", target)
-      if channel_credential is not None:
-          channel = aio.secure_channel(target, channel_credential, **kwargs)
-      else:
-          channel = aio.insecure_channel(target, **kwargs)
+        """Initialize the gRPC transport session."""
+        logger.info("Creating GRPCTransportSession for target: %s", target)
+        if channel_credential is not None:
+            channel = aio.secure_channel(target, channel_credential, **kwargs)
+        else:
+            channel = aio.insecure_channel(target, **kwargs)
 
-      stub = mcp_pb2_grpc.McpStub(channel)
-      self.grpc_stub = stub
-      self._channel = channel
-      self._tool_output_schemas = {}
-      self._request_counter = 0
-      self._progress_callbacks: dict[str | int, ProgressFnT] = {}
-      self._running_calls: dict[str | int, aio.Call] = {}
-      logger.info("GRPCTransportSession created.")
+        stub = mcp_pb2_grpc.McpStub(channel)
+        self.grpc_stub = stub
+        self._channel = channel
+        self._tool_output_schemas = {}
+        self._request_counter = 0
+        self._progress_callbacks: dict[str | int, ProgressFnT] = {}
+        self._running_calls: dict[str | int, aio.Call] = {}
+        logger.info("GRPCTransportSession created.")
 
     # TODO(asheshvidyut): Look into relevance of this API
     # b/448290917
     async def close(self) -> None:
-      """Close the gRPC channel."""
-      logger.info("Closing GRPCTransportSession channel.")
-      await self._channel.close()
-      logger.info("GRPCTransportSession channel closed.")
+        """Close the gRPC channel."""
+        logger.info("Closing GRPCTransportSession channel.")
+        await self._channel.close()
+        logger.info("GRPCTransportSession channel closed.")
 
     def _cancel_request(self, request_id: str | int):
         """Cancel a running request by its ID."""
@@ -93,8 +93,7 @@ class GRPCTransportSession(TransportSession):
             self._cancel_request(request_id)
         else:
             logger.warning(
-                "GRPCTransportSession.send_notification received unhandled "
-                "notification type: %s",
+                "GRPCTransportSession.send_notification received unhandled notification type: %s",
                 type(notification.root),
             )
 
@@ -102,9 +101,7 @@ class GRPCTransportSession(TransportSession):
         """Send an initialize request."""
         ...
 
-    async def send_ping(self):
-      ...
-
+    async def send_ping(self): ...
 
     async def send_progress_notification(
         self,
@@ -112,59 +109,40 @@ class GRPCTransportSession(TransportSession):
         progress: float,
         total: float | None = None,
         message: str | None = None,
-    ) -> None:
-      ...
+    ) -> None: ...
 
-
-    async def set_logging_level(self,
-        level: types.LoggingLevel) -> types.EmptyResult:
-      """Send a logging/setLevel request."""
-      ...
-
-
-    async def list_resources(self,
-        cursor: str | None = None) -> types.ListResourcesResult:
-      """Send a resources/list request."""
-      ...
-
-
-    async def list_resource_templates(self,
-        cursor: str | None = None) -> types.ListResourceTemplatesResult:
-        """Send a resources/templates/list request."""
+    async def set_logging_level(self, level: types.LoggingLevel) -> types.EmptyResult:
+        """Send a logging/setLevel request."""
         ...
 
+    async def list_resources(self, cursor: str | None = None) -> types.ListResourcesResult:
+        """Send a resources/list request."""
+        ...
 
+    async def list_resource_templates(self, cursor: str | None = None) -> types.ListResourceTemplatesResult:
+        """Send a resources/templates/list request."""
+        ...
 
     async def read_resource(self, uri: AnyUrl) -> types.ReadResourceResult:
         """Send a resources/read request."""
         ...
 
-
     async def subscribe_resource(self, uri: AnyUrl) -> types.EmptyResult:
         """Send a resources/subscribe request."""
         ...
-
 
     async def unsubscribe_resource(self, uri: AnyUrl) -> types.EmptyResult:
         """Send a resources/unsubscribe request."""
         ...
 
-    async def request_generator(self,
-                                name: str,
-                                request_id: int,
-                                arguments: Any | None = None):
+    async def request_generator(self, name: str, request_id: int, arguments: Any | None = None):
         """Yields the single tool call request."""
-        logger.info(
-            "Calling tool '%s' with request_id: %s", name, request_id
-        )
+        logger.info("Calling tool '%s' with request_id: %s", name, request_id)
         yield types.CallToolRequestParams(
             name=name,
             arguments=arguments or {},
-            _meta=types.RequestParams.Meta(
-                progressToken=request_id
-            ),
+            _meta=types.RequestParams.Meta(progressToken=request_id),
         )
-
 
     async def call_tool(
         self,
@@ -182,16 +160,11 @@ class GRPCTransportSession(TransportSession):
 
         proto_results = []
         try:
-            request_iterator = convert.generate_call_tool_requests(
-                self.request_generator(name, request_id, arguments)
-            )
+            request_iterator = convert.generate_call_tool_requests(self.request_generator(name, request_id, arguments))
             # TODO(asheshvidyut): Add timeout support for CallTool
-            call = self.grpc_stub.CallTool(
-                request_iterator
-            )
+            call = self.grpc_stub.CallTool(request_iterator)
             self._running_calls[request_id] = call
             async for response in call:
-
                 if response.common.HasField("progress"):
                     progress_proto = response.common.progress
                     progress_token = int(progress_proto.progress_token)
@@ -218,11 +191,9 @@ class GRPCTransportSession(TransportSession):
                 )
             ) from e
         except json_format.ParseError as e:
-            error_message = f'Failed to parse tool proto: {e}'
+            error_message = f"Failed to parse tool proto: {e}"
             logger.error(error_message, exc_info=True)
-            raise McpError(
-                ErrorData(code=types.PARSE_ERROR, message=error_message)
-            ) from e
+            raise McpError(ErrorData(code=types.PARSE_ERROR, message=error_message)) from e
         except grpc.RpcError as e:
             if e.code() == grpc.StatusCode.CANCELLED:
                 raise McpError(
@@ -233,17 +204,11 @@ class GRPCTransportSession(TransportSession):
                 ) from e
             error_message = f'grpc.RpcError - Failed to call tool "{name}": {e}'
             logger.error(error_message, exc_info=True)
-            raise McpError(
-                ErrorData(code=types.INTERNAL_ERROR, message=error_message)
-            ) from e
+            raise McpError(ErrorData(code=types.INTERNAL_ERROR, message=error_message)) from e
         except Exception as e:
-            error_message = (
-                f'An unexpected error occurred during CallTool: {e}'
-            )
+            error_message = f"An unexpected error occurred during CallTool: {e}"
             logger.error(error_message, exc_info=True)
-            raise McpError(
-                ErrorData(code=types.INTERNAL_ERROR, message=error_message)
-            ) from e
+            raise McpError(ErrorData(code=types.INTERNAL_ERROR, message=error_message)) from e
         finally:
             self._running_calls.pop(request_id, None)
             self._progress_callbacks.pop(request_id, None)
@@ -268,8 +233,7 @@ class GRPCTransportSession(TransportSession):
             await self._validate_tool_result(name, final_result)
         return final_result
 
-    async def _validate_tool_result(self, name: str,
-        result: types.CallToolResult) -> None:
+    async def _validate_tool_result(self, name: str, result: types.CallToolResult) -> None:
         """Validate the structured content of a tool result against its output schema."""
         if name not in self._tool_output_schemas:
             # refresh output schema cache
@@ -280,22 +244,17 @@ class GRPCTransportSession(TransportSession):
             await _validate_tool_result(output_schema, name, result)
         else:
             logger.warning(
-                "Tool %s not listed by server, cannot validate any structured"
-                " content",
+                "Tool %s not listed by server, cannot validate any structured content",
                 name,
             )
 
-    async def list_prompts(self,
-        cursor: str | None = None) -> types.ListPromptsResult:
+    async def list_prompts(self, cursor: str | None = None) -> types.ListPromptsResult:
         """Send a prompts/list request."""
         ...
 
-
-    async def get_prompt(self, name: str,
-        arguments: dict[str, str] | None = None) -> types.GetPromptResult:
+    async def get_prompt(self, name: str, arguments: dict[str, str] | None = None) -> types.GetPromptResult:
         """Send a prompts/get request."""
         ...
-
 
     async def complete(
         self,
@@ -305,7 +264,6 @@ class GRPCTransportSession(TransportSession):
     ) -> types.CompleteResult:
         """Send a completion/complete request."""
         ...
-
 
     async def list_tools(
         self,
@@ -330,7 +288,7 @@ class GRPCTransportSession(TransportSession):
             for tool in tools:
                 self._tool_output_schemas[tool.name] = tool.outputSchema
         except json_format.ParseError as e:
-            error_message = f'Failed to parse tool proto: {e}'
+            error_message = f"Failed to parse tool proto: {e}"
             logger.error(error_message, exc_info=True)
             error_data = ErrorData(
                 code=types.PARSE_ERROR,
@@ -338,7 +296,7 @@ class GRPCTransportSession(TransportSession):
             )
             raise McpError(error_data) from e
         except RuntimeError as e:
-            error_message = f'Failed to convert tool proto to type: {e}'
+            error_message = f"Failed to convert tool proto to type: {e}"
             logger.error(error_message, exc_info=True)
             error_data = ErrorData(
                 code=types.INTERNAL_ERROR,
@@ -346,7 +304,7 @@ class GRPCTransportSession(TransportSession):
             )
             raise McpError(error_data) from e
         except grpc.RpcError as e:
-            error_message = f'grpc.RpcError - Failed to list tools: {e}'
+            error_message = f"grpc.RpcError - Failed to list tools: {e}"
             logger.error(error_message, exc_info=True)
             error_data = ErrorData(
                 code=types.INTERNAL_ERROR,

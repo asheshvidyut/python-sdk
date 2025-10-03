@@ -191,15 +191,15 @@ class FastMCP(Generic[LifespanResultT]):
             lifespan=lifespan,
             auth=auth,
             transport_security=transport_security,
-            target = target,
-            grpc_enable_reflection = grpc_enable_reflection,
-            grpc_migration_thread_pool = grpc_migration_thread_pool,
-            grpc_handlers = grpc_handlers,
-            grpc_interceptors = grpc_interceptors,
-            grpc_options = grpc_options,
-            grpc_maximum_concurrent_rpcs = grpc_maximum_concurrent_rpcs,
-            grpc_compression = grpc_compression,
-            grpc_credentials = grpc_credentials,
+            target=target,
+            grpc_enable_reflection=grpc_enable_reflection,
+            grpc_migration_thread_pool=grpc_migration_thread_pool,
+            grpc_handlers=grpc_handlers,
+            grpc_interceptors=grpc_interceptors,
+            grpc_options=grpc_options,
+            grpc_maximum_concurrent_rpcs=grpc_maximum_concurrent_rpcs,
+            grpc_compression=grpc_compression,
+            grpc_credentials=grpc_credentials,
         )
 
         self._mcp_server = MCPServer(
@@ -304,34 +304,33 @@ class FastMCP(Generic[LifespanResultT]):
         """Run the server with gRPC transport."""
         # Imports are not at the top of file because grpc
         # is an optional dependency.
-        from mcp.server.grpc import create_mcp_grpc_server # pylint: disable=g-import-not-at-top
-        server = await create_mcp_grpc_server(
-            mcp_server=self,
-            target=self.settings.target
-        )
+        from mcp.server.grpc import create_mcp_grpc_server  # pylint: disable=g-import-not-at-top
+
+        server = await create_mcp_grpc_server(mcp_server=self, target=self.settings.target)
         try:
             await server.wait_for_termination()
         finally:
             await server.stop(1)
 
     def add_to_existing_server(
-                self,
-                server: Any,
-                transport: Literal["sse", "streamable-http", "grpc"] = "grpc",
-        ) -> None:
-                match transport:
-                    case "grpc":
-                        """Attach the FastMCP server with a gRPC server."""
-                        from mcp.server.grpc import (  # pylint: disable=g-import-not-at-top
-                            attach_mcp_server_to_grpc_server,
-                        )
-                        attach_mcp_server_to_grpc_server(self, server)
-                    case "streamable-http":
-                        raise ValueError("HTTP is not supported.")
-                    case "sse":
-                        raise ValueError("SSE is not supported.")
-                    case _:
-                        raise ValueError(f"Unknown transport: {transport}")
+        self,
+        server: Any,
+        transport: Literal["sse", "streamable-http", "grpc"] = "grpc",
+    ) -> None:
+        match transport:
+            case "grpc":
+                """Attach the FastMCP server with a gRPC server."""
+                from mcp.server.grpc import (  # pylint: disable=g-import-not-at-top
+                    attach_mcp_server_to_grpc_server,
+                )
+
+                attach_mcp_server_to_grpc_server(self, server)
+            case "streamable-http":
+                raise ValueError("HTTP is not supported.")
+            case "sse":
+                raise ValueError("SSE is not supported.")
+            case _:
+                raise ValueError(f"Unknown transport: {transport}")
 
     def _setup_handlers(self) -> None:
         """Set up core MCP protocol handlers."""
@@ -374,17 +373,14 @@ class FastMCP(Generic[LifespanResultT]):
         return Context(request_context=request_context, fastmcp=self)
 
     async def call_tool(
-        self, name: str, arguments: dict[str, Any],
-        request_context: RequestContext | None = None
+        self, name: str, arguments: dict[str, Any], request_context: RequestContext | None = None
     ) -> Sequence[ContentBlock] | dict[str, Any]:
         """Call a tool by name with arguments."""
         if request_context:
             context = Context(request_context=request_context, fastmcp=self)
         else:
             context = self.get_context()
-        return await self._tool_manager.call_tool(name, arguments,
-                                                  context=context,
-                                                  convert_result=True)
+        return await self._tool_manager.call_tool(name, arguments, context=context, convert_result=True)
 
     async def list_resources(self) -> list[MCPResource]:
         """List all available resources."""

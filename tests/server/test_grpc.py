@@ -74,9 +74,7 @@ def server_port() -> int:
 async def grpc_server(server_port: int) -> Generator[None, None, None]:
     """Start a gRPC server in process."""
     server_instance = setup_test_server(server_port)
-    server = await create_mcp_grpc_server(
-        target=f"127.0.0.1:{server_port}", mcp_server=server_instance
-    )
+    server = await create_mcp_grpc_server(target=f"127.0.0.1:{server_port}", mcp_server=server_instance)
 
     yield
     await server.stop(None)
@@ -234,9 +232,7 @@ def failing_server_port() -> int:
 async def failing_grpc_server(failing_server_port: int) -> Generator[None, None, None]:
     """Start a gRPC server in process that fails on list_tools."""
     server_instance = setup_failing_test_server(failing_server_port)
-    server = await create_mcp_grpc_server(
-        target=f"127.0.0.1:{failing_server_port}", mcp_server=server_instance
-    )
+    server = await create_mcp_grpc_server(target=f"127.0.0.1:{failing_server_port}", mcp_server=server_instance)
 
     yield
     await server.stop(None)
@@ -247,18 +243,14 @@ async def failing_grpc_stub(
     failing_server_port: int,
 ) -> Generator[mcp_pb2_grpc.McpStub, None, None]:
     """Create a gRPC client stub for failing server."""
-    async with grpc.aio.insecure_channel(
-        f"127.0.0.1:{failing_server_port}"
-    ) as channel:
+    async with grpc.aio.insecure_channel(f"127.0.0.1:{failing_server_port}") as channel:
         stub = mcp_pb2_grpc.McpStub(channel)
         yield stub
 
 
 @pytest.mark.skipif("COVERAGE_OUTPUT_FILE" in os.environ, reason="Crashes under coverage")
 @pytest.mark.anyio
-async def test_list_tools_grpc_error(
-    failing_grpc_server: None, failing_grpc_stub: mcp_pb2_grpc.McpStub
-):
+async def test_list_tools_grpc_error(failing_grpc_server: None, failing_grpc_stub: mcp_pb2_grpc.McpStub):
     """Test ListTools via gRPC when server handler raises an error."""
     request = mcp_pb2.ListToolsRequest()
     with pytest.raises(grpc.aio.AioRpcError) as excinfo:
@@ -277,11 +269,7 @@ async def test_call_tool_grpc_greet(grpc_server: None, grpc_stub: mcp_pb2_grpc.M
     args_struct = struct_pb2.Struct()
     json_format.ParseDict(arguments, args_struct)
 
-    request = mcp_pb2.CallToolRequest(
-        request=mcp_pb2.CallToolRequest.Request(
-            name=tool_name, arguments=args_struct
-        )
-    )
+    request = mcp_pb2.CallToolRequest(request=mcp_pb2.CallToolRequest.Request(name=tool_name, arguments=args_struct))
 
     async def request_iterator():
         yield request
@@ -291,31 +279,22 @@ async def test_call_tool_grpc_greet(grpc_server: None, grpc_stub: mcp_pb2_grpc.M
         responses.append(response)
 
     assert len(responses) == 2
-    assert (
-        responses[0].result.text.text
-        == "Hello, Test! Welcome to the Simple gRPC Server!"
-    )
+    assert responses[0].result.text.text == "Hello, Test! Welcome to the Simple gRPC Server!"
     assert not responses[0].result.is_error
-    assert responses[1].result.structured_content['result'] == "Hello, Test! Welcome to the Simple gRPC Server!"
+    assert responses[1].result.structured_content["result"] == "Hello, Test! Welcome to the Simple gRPC Server!"
     assert not responses[1].result.is_error
 
 
 @pytest.mark.skipif("COVERAGE_OUTPUT_FILE" in os.environ, reason="Crashes under coverage")
 @pytest.mark.anyio
-async def test_call_tool_grpc_test_tool(
-    grpc_server: None, grpc_stub: mcp_pb2_grpc.McpStub
-):
+async def test_call_tool_grpc_test_tool(grpc_server: None, grpc_stub: mcp_pb2_grpc.McpStub):
     """Test CallTool via gRPC with test_tool."""
     tool_name = "test_tool"
     arguments = {"a": 1, "b": 2}
     args_struct = struct_pb2.Struct()
     json_format.ParseDict(arguments, args_struct)
 
-    request = mcp_pb2.CallToolRequest(
-        request=mcp_pb2.CallToolRequest.Request(
-            name=tool_name, arguments=args_struct
-        )
-    )
+    request = mcp_pb2.CallToolRequest(request=mcp_pb2.CallToolRequest.Request(name=tool_name, arguments=args_struct))
 
     async def request_iterator():
         yield request
@@ -327,7 +306,7 @@ async def test_call_tool_grpc_test_tool(
     assert len(responses) == 2
     assert responses[0].result.text.text == "3"
     assert not responses[0].result.is_error
-    assert responses[1].result.structured_content['result'] == 3
+    assert responses[1].result.structured_content["result"] == 3
     assert not responses[1].result.is_error
 
 
@@ -340,11 +319,7 @@ async def test_call_failing_tool_grpc(grpc_server: None, grpc_stub: mcp_pb2_grpc
     args_struct = struct_pb2.Struct()
     json_format.ParseDict(arguments, args_struct)
 
-    request = mcp_pb2.CallToolRequest(
-        request=mcp_pb2.CallToolRequest.Request(
-            name=tool_name, arguments=args_struct
-        )
-    )
+    request = mcp_pb2.CallToolRequest(request=mcp_pb2.CallToolRequest.Request(name=tool_name, arguments=args_struct))
 
     async def request_iterator():
         yield request
@@ -355,10 +330,7 @@ async def test_call_failing_tool_grpc(grpc_server: None, grpc_stub: mcp_pb2_grpc
 
     assert len(responses) == 1
     assert responses[0].result.is_error
-    assert (
-        "Error executing tool failing_tool: This tool is designed to fail."
-        in responses[0].result.text.text
-    )
+    assert "Error executing tool failing_tool: This tool is designed to fail." in responses[0].result.text.text
 
 
 @pytest.mark.skipif("COVERAGE_OUTPUT_FILE" in os.environ, reason="Crashes under coverage")
@@ -370,11 +342,7 @@ async def test_call_tool_grpc_list_tool(grpc_server: None, grpc_stub: mcp_pb2_gr
     args_struct = struct_pb2.Struct()
     json_format.ParseDict(arguments, args_struct)
 
-    request = mcp_pb2.CallToolRequest(
-        request=mcp_pb2.CallToolRequest.Request(
-            name=tool_name, arguments=args_struct
-        )
-    )
+    request = mcp_pb2.CallToolRequest(request=mcp_pb2.CallToolRequest.Request(name=tool_name, arguments=args_struct))
 
     async def request_iterator():
         yield request
@@ -388,7 +356,7 @@ async def test_call_tool_grpc_list_tool(grpc_server: None, grpc_stub: mcp_pb2_gr
     assert not responses[0].result.is_error
     assert responses[1].result.text.text == "two"
     assert not responses[1].result.is_error
-    assert responses[2].result.structured_content['result'] == ["one", "two"]
+    assert responses[2].result.structured_content["result"] == ["one", "two"]
     assert not responses[2].result.is_error
 
 
@@ -419,11 +387,7 @@ async def test_call_tool_grpc_dict_tool(grpc_server: None, grpc_stub: mcp_pb2_gr
     args_struct = struct_pb2.Struct()
     json_format.ParseDict(arguments, args_struct)
 
-    request = mcp_pb2.CallToolRequest(
-        request=mcp_pb2.CallToolRequest.Request(
-            name=tool_name, arguments=args_struct
-        )
-    )
+    request = mcp_pb2.CallToolRequest(request=mcp_pb2.CallToolRequest.Request(name=tool_name, arguments=args_struct))
 
     async def request_iterator():
         yield request

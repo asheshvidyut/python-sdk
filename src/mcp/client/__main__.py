@@ -62,8 +62,7 @@ async def main(command_or_url: str, args: list[str], env: list[tuple[str, str]])
         # Use gRPC session if scheme is "grpc://" or if it looks like a host:port.
         target = parsed_url.netloc if parsed_url.scheme == "grpc" else command_or_url
         if not target:
-            logger.error("Invalid gRPC target: %s",
-                               command_or_url)
+            logger.error("Invalid gRPC target: %s", command_or_url)
             return
         session = GRPCTransportSession(target=target)
         logger.info("Initializing gRPC session to %s", target)
@@ -83,8 +82,10 @@ async def main(command_or_url: str, args: list[str], env: list[tuple[str, str]])
 
 def cli():
     parser = argparse.ArgumentParser()
-    parser.add_argument("command_or_url",
-                        help="Command or URL to connect to (e.g., http://..., https://..., grpc://host:port, host:port for gRPC, or a command)")
+    parser.add_argument(
+        "command_or_url",
+        help="Command or URL to connect to (e.g., http://..., https://..., grpc://host:port, host:port for gRPC, or a command)",
+    )
     parser.add_argument("args", nargs="*", help="Additional arguments")
     parser.add_argument(
         "-e",

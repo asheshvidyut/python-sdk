@@ -83,7 +83,7 @@ class ClientSession(
         types.ClientResult,
         types.ServerRequest,
         types.ServerNotification,
-    ]
+    ],
 ):
     def __init__(
         self,

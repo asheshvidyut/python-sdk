@@ -28,7 +28,7 @@ class build_py(_build_py):
         print(f"Replacing import in {TARGET_FILE}...")
         new_content = content.replace(old_import, new_import)
 
-        with open(TARGET_FILE, 'w') as file:
+        with open(TARGET_FILE, "w") as file:
             file.write(new_content)
 
         # Let the original build command do its job
@@ -36,4 +36,4 @@ class build_py(_build_py):
 
 
 # This is what setuptools will use
-cmdclass = {'build_py': build_py}
+cmdclass = {"build_py": build_py}
