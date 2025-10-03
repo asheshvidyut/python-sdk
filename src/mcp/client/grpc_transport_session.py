@@ -196,7 +196,7 @@ class GRPCTransportSession(TransportSession):
 
                 if response.common.HasField("progress"):
                     progress_proto = response.common.progress
-                    progress_token = progress_proto.progress_token
+                    progress_token = int(progress_proto.progress_token)
 
                     if progress_token in self._progress_callbacks:
                         callback = self._progress_callbacks[progress_token]
