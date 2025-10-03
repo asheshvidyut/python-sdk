@@ -3,8 +3,8 @@ import unittest.mock
 
 import pytest
 
-from mcp_grpc.proto import mcp_pb2
-from mcp_grpc.server import grpc_session
+from mcp.proto import mcp_pb2
+from mcp.server import grpc_session
 
 
 @pytest.mark.anyio
