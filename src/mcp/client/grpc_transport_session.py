@@ -165,7 +165,14 @@ class GRPCTransportSession(TransportSession):
             async for response in call:
                 if response.common.HasField("progress"):
                     progress_proto = response.common.progress
-                    progress_token = int(progress_proto.progress_token)
+                    progress = progress_proto.progress
+                    try:
+                        progress_token = int(progress_proto.progress_token)
+                    except ValueError:
+                        logger.warning(
+                            "Progress token is not an integer: %s",
+                            progress_proto.progress_token,
+                        )
 
                     if progress_token in self._progress_callbacks:
                         callback = self._progress_callbacks[progress_token]
