@@ -13,6 +13,15 @@ import anyio
 from anyio.streams.memory import MemoryObjectReceiveStream, MemoryObjectSendStream
 
 import mcp.types as types
+from mcp.client.session import (
+    ClientSession,
+    ElicitationFnT,
+    ListRootsFnT,
+    LoggingFnT,
+    MessageHandlerFnT,
+    SamplingFnT,
+    TransportSession,
+)
 from mcp.client.session import ClientSession, ElicitationFnT, ListRootsFnT, LoggingFnT, MessageHandlerFnT, SamplingFnT
 from mcp.server import Server
 from mcp.server.fastmcp import FastMCP
