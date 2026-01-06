@@ -11,4 +11,4 @@ fi
 source .agent_venv/bin/activate
 
 echo "Running gRPC Client..."
-PYTHONPATH=src python examples/grpc/client.py
+PYTHONPATH=src:. python examples/grpc/client.py
