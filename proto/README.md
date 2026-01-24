@@ -1,30 +1,30 @@
 # MCP gRPC: High-Performance Transport
 
-This directory contains the Protocol Buffer definitions for the Model Context Protocol (MCP) as a native gRPC service. This implementation modernizes the MCP transport layer, moving beyond the limitations of HTTP/1.1 (lacks streaming) and JSON (type safety, memory footprint, processing speed) to provide a better foundation for AI agents.
+This directory contains the Protocol Buffer definitions for the Model Context Protocol (MCP) as a native gRPC service. This provides an alternative to HTTP/1.1 that addresses its limitations: lack of streaming, JSON's type safety issues, memory footprint, and processing speed.
 
 ## Why gRPC for MCP?
 
-The traditional MCP over HTTP/1.1 uses JSON-RPC, which served as a great starting point but introduced friction as agentic workflows scaled. Our native gRPC implementation addresses these "friction points" to performance and efficiency:
+MCP over HTTP/1.1 uses JSON-RPC, which works well but has limitations for high-throughput or streaming use cases. A gRPC implementation addresses these limitations:
 
 ```mermaid
 graph LR
-    subgraph "Legacy Transport (HTTP/1.1)"
+    subgraph "HTTP/1.1 + JSON-RPC"
         A[Client] -- "JSON (Text)" --> B[Server]
         B -- "Response" --> A
         A -. "SSE/Polling" .-> B
-        style A fill:#f9f,stroke:#333,stroke-width:2px
     end
-    subgraph "Modern Transport (gRPC/HTTP2)"
+    subgraph "gRPC + HTTP/2"
         C[Client] == "Protobuf (Binary)" ==> D[Server]
         C -- "Bidi Stream" --> D
         D -- "Push" --> C
-        style D fill:#00ff0055,stroke:#333,stroke-width:2px
     end
 ```
 
+In addition to a streaming transport layer, this proposal also introduces a tunneling layer to support interoperability between streaming and cursor-based transports.  This would allow for backward compatibility as well as running of a streaming protobuf.  Please read [README-MCP-TUNNELING-PROPOSAL.md](README-MCP-TUNNELING-PROPOSAL.md) for details.
+
 ### Key Improvements
 
-*   **Native Bidirectional Streaming**: Replaces fragile SSE and long-polling with a single, persistent HTTP/2 stream for interleaved requests, progress updates, and server notifications.
+*   **Native Bidirectional Streaming**: Replaces SSE and long-polling with a single, persistent HTTP/2 stream for interleaved requests, progress updates, and server notifications.
 *   **Binary Efficiency**: Protobuf serialization is typically 10x smaller and significantly faster than JSON, especially when handling large blobs or many small tool calls.
 *   **Zero-Copy Intent**: By using native `bytes` for resource data, we avoid the overhead of Base64 encoding required by JSON-RPC.
 *   **Native Backpressure**: Leverages HTTP/2 flow control to ensure servers aren't overwhelmed by fast clients (and vice versa).
@@ -33,7 +33,7 @@ graph LR
 
 ## Architecture & Lifecycle
 
-The gRPC transport is designed to be a drop-in replacement for the standard MCP session, fitting seamlessly into the pluggable transport architecture of the SDK.
+The gRPC transport implements `ClientTransportSession`, the same interface used by SSE, WebSocket, and stdio transports.
 
 ### The Session Flow
 
@@ -66,7 +66,7 @@ sequenceDiagram
 
 ## Service Definition
 
-The `McpService` provides a comprehensive interface for all MCP operations. While it supports unary calls for simple operations, it excels in its streaming variants. For a deep dive into advanced patterns like document chunking and parallel worker analysis, see our [Streaming & Multiplexing Guide](../docs/experimental/grpc-streaming.md).
+The `McpService` exposes all MCP operations as RPCs. It supports both unary calls and streaming variants:
 
 ```protobuf
 service McpService {
@@ -82,7 +82,7 @@ service McpService {
   rpc ReadResourceChunked(...) returns (stream ReadResourceChunkedResponse);
   rpc WatchResources(...) returns (stream WatchResourcesResponse);
 
-  // The "Power User" Interface
+  // Bidirectional multiplexed stream
   rpc Session(stream SessionRequest) returns (stream SessionResponse);
 }
 ```
@@ -146,15 +146,22 @@ In HTTP/JSON-RPC, paginating large lists (like `ListTools` or `ListResources`) i
 
 ### Stream Termination Semantics
 
-For direct streaming RPCs (e.g., `ListTools`), stream termination signals completion. However, the bidirectional `Session` stream stays open across multiple operations, requiring explicit completion signals.
+For direct streaming RPCs (e.g., `ListTools`), stream EOF signals completion naturally. However, the bidirectional `Session` stream stays open across multiple operations, requiring explicit completion signals via `SessionResponse`.
 
-**Solution:** List responses use `oneof { Tool tool; StreamEnd end; }` pattern:
+**Solution:** List responses are simple (just the item), and Session uses top-level control messages:
 
 ```protobuf
+// Direct RPC: simple response, stream EOF = done
 message ListToolsResponse {
+  Tool tool = 1;
+}
+
+// Session stream: control messages in SessionResponse
+message SessionResponse {
   oneof payload {
-    Tool tool = 1;
-    StreamEnd end = 2;  // Signals no more tools
+    ListToolsResponse list_tools = 12;
+    StreamEnd stream_end = 55;    // Completion signal
+    StreamError stream_error = 61; // Error signal
   }
 }
 ```
@@ -162,7 +169,7 @@ message ListToolsResponse {
 | Operation Type | Completion Signal |
 |---------------|-------------------|
 | Direct streaming RPC | Server closes stream |
-| Session list operation | `StreamEnd` message with matching `request_id` |
+| Session list operation | `SessionResponse.stream_end` with matching `request_id` |
 | Session watch operation | Continues until `CancelRequest` or error |
 | Tool with progress | `ToolResult` or `StreamError` in response |
 
@@ -177,7 +184,7 @@ This is an inherent transport difference, not a bug. Applications needing backpr
 
 ### Streaming Adapter Pattern
 
-For interoperability between streaming (gRPC) and cursor-based (JSON-RPC) transports, we use a transparent tunneling layer. See [README-MCP-TUNNELING-PROPOSAL.md](../README-MCP-TUNNELING-PROPOSAL.md) for details.
+For interoperability between streaming (gRPC) and cursor-based (JSON-RPC) transports, we use a transparent tunneling layer. See [README-MCP-TUNNELING-PROPOSAL.md](README-MCP-TUNNELING-PROPOSAL.md) for details.
 
 ```python
 class StreamingAdapter:

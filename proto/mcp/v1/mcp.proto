@@ -118,10 +118,13 @@ message Cursor {
   string value = 1;
 }
 
-// Signals completion of a streaming operation within the Session stream.
-// Required because the Session stream stays open across multiple operations.
+// Signals completion of a multi-response operation within the Session stream.
+// Used ONLY in SessionResponse.stream_end - not embedded in individual responses.
+// Required because the Session stream stays open across multiple operations,
+// unlike direct streaming RPCs where stream EOF signals completion.
 message StreamEnd {
-  string request_id = 1;  // Correlates to the original request's message_id
+  // Must match the SessionRequest.message_id of the originating request.
+  string request_id = 1;
 }
 
 // Role in a conversation
@@ -227,10 +230,7 @@ message ListToolsRequest {
 }
 
 message ListToolsResponse {
-  oneof payload {
-    Tool tool = 1;
-    StreamEnd end = 2;  // Signals no more tools; required for Session stream
-  }
+  Tool tool = 1;
 }
 
 // Unary tool call
@@ -366,10 +366,7 @@ message ListResourcesRequest {
 }
 
 message ListResourcesResponse {
-  oneof payload {
-    Resource resource = 1;
-    StreamEnd end = 2;  // Signals no more resources
-  }
+  Resource resource = 1;
 }
 
 message ListResourceTemplatesRequest {
@@ -378,10 +375,7 @@ message ListResourceTemplatesRequest {
 }
 
 message ListResourceTemplatesResponse {
-  oneof payload {
-    ResourceTemplate resource_template = 1;
-    StreamEnd end = 2;  // Signals no more templates
-  }
+  ResourceTemplate resource_template = 1;
 }
 
 // Unary resource read
@@ -466,10 +460,7 @@ message ListPromptsRequest {
 }
 
 message ListPromptsResponse {
-  oneof payload {
-    Prompt prompt = 1;
-    StreamEnd end = 2;  // Signals no more prompts
-  }
+  Prompt prompt = 1;
 }
 
 // Unary prompt get
@@ -612,5 +603,8 @@ message ErrorResponse {
 }
 
 message CancelRequest {
-  string request_id = 1;  // ID of request to cancel
+  // Must match the SessionRequest.message_id of the request to cancel.
+  // Used to terminate long-running operations like WatchResources or
+  // streaming list operations before natural completion.
+  string request_id = 1;
 }

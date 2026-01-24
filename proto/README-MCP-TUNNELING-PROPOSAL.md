@@ -119,17 +119,20 @@ The unified streaming interface must signal completion consistently across trans
 
 | Signal | gRPC (direct RPC) | gRPC (Session stream) | JSON-RPC (via adapter) |
 |--------|-------------------|----------------------|------------------------|
-| Success | Server closes stream | `StreamEnd` message | `nextCursor = null` |
-| Error | gRPC status code | `StreamError` message | Exception from RPC |
-| Cancellation | Client cancels stream | `CancelRequest` message | Stop requesting pages |
+| Success | Server closes stream | `SessionResponse.stream_end` | `nextCursor = null` |
+| Error | gRPC status code | `SessionResponse.stream_error` | Exception from RPC |
+| Cancellation | Client cancels stream | `CancelRequest` (matching `message_id`) | Stop requesting pages |
 
 For the bidirectional `Session` stream, explicit `StreamEnd` messages are required because the stream stays open across multiple operations:
 
 ```protobuf
-message ListToolsResponse {
+message SessionResponse {
+  string message_id = 1;
+  string in_reply_to = 2;
+
   oneof payload {
-    Tool tool = 1;
-    StreamEnd end = 2;  // Signals no more tools for this request
+    ListToolsResponse list_tools = 12;
+    StreamEnd stream_end = 55;  // Signals completion of a multi-response operation
   }
 }
 ```
@@ -174,6 +177,6 @@ We get the best of both worlds: native streaming and backward compatibility.
 
 ## Related
 
-- [Proto Definition](proto/mcp/v1/mcp.proto) - gRPC service with stream termination semantics
-- [Proto README](proto/README.md) - Design decisions and implementation notes
+- [Proto Definition](mcp/v1/mcp.proto) - gRPC service with stream termination semantics
+- [Proto README](README.md) - Design decisions and implementation notes
 - [Google Cloud Blog](https://cloud.google.com/blog/products/networking/grpc-as-a-native-transport-for-mcp) - Original gRPC for MCP proposal
