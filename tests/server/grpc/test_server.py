@@ -9,7 +9,7 @@ import mcp.types as types
 from mcp.server.lowlevel.helper_types import ReadResourceContents
 
 import grpc
-from mcp.v1.mcp_pb2 import ListToolsRequest, SessionRequest
+from mcp.v1.mcp_pb2 import InitializeRequest, ListToolsRequest, SessionRequest
 from mcp.v1.mcp_pb2_grpc import McpServiceStub
 
 @pytest.mark.anyio
@@ -197,6 +197,10 @@ async def test_grpc_session_list_tools_stream_end():
             stub = McpServiceStub(channel)
 
             async def requests():
+                init = InitializeRequest(protocol_version=types.LATEST_PROTOCOL_VERSION)
+                init.client_info.name = "test-client"
+                init.client_info.version = "0.0"
+                yield SessionRequest(message_id="init-1", initialize=init)
                 yield SessionRequest(message_id="req-1", list_tools=ListToolsRequest())
 
             responses = []
