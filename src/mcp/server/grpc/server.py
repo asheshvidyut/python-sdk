@@ -1309,6 +1309,7 @@ class McpGrpcServicer(McpServiceServicer):
         session = GrpcServerSession()
         response_queue: asyncio.Queue[SessionResponse] = asyncio.Queue()
         active_tasks: dict[str, asyncio.Task[None]] = {}
+        initialize_task: asyncio.Task[None] | None = None
         stop_sentinel: object = object()
 
         async def handle_request(request) -> None:
@@ -1317,13 +1318,27 @@ class McpGrpcServicer(McpServiceServicer):
 
             try:
                 if payload_type != "initialize" and session._client_params is None:
-                    await self._emit_stream_error(
-                        response_queue,
-                        request_id,
-                        code=types.INVALID_REQUEST,
-                        message="Session not initialized",
-                    )
-                    return
+                    if initialize_task is None:
+                        await self._emit_stream_error(
+                            response_queue,
+                            request_id,
+                            code=types.INVALID_REQUEST,
+                            message="Session not initialized",
+                        )
+                        return
+                    try:
+                        await initialize_task
+                    except Exception:
+                        # Initialization emits its own error response.
+                        pass
+                    if session._client_params is None:
+                        await self._emit_stream_error(
+                            response_queue,
+                            request_id,
+                            code=types.INVALID_REQUEST,
+                            message="Session not initialized",
+                        )
+                        return
 
                 if payload_type == "initialize":
                     response = await self._handle_session_initialize(
@@ -1439,6 +1454,7 @@ class McpGrpcServicer(McpServiceServicer):
                 active_tasks.pop(request_id, None)
 
         async def consume_requests() -> None:
+            nonlocal initialize_task
             async for request in request_iterator:
                 payload_type = request.WhichOneof("payload")
                 if payload_type == "cancel":
@@ -1459,6 +1475,8 @@ class McpGrpcServicer(McpServiceServicer):
 
                 task = asyncio.create_task(handle_request(request))
                 active_tasks[request.message_id] = task
+                if payload_type == "initialize" and initialize_task is None:
+                    initialize_task = task
 
             if active_tasks:
                 # Copy values to avoid race with tasks removing themselves
