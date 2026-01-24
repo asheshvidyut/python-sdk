@@ -794,6 +794,35 @@ class PromptMessage(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
+class StreamPromptCompletionChunk(BaseModel):
+    """A chunk of streamed prompt completion output."""
+
+    token: str
+    isFinal: bool = False
+    finishReason: str | None = None
+    model_config = ConfigDict(extra="allow")
+
+    @classmethod
+    def coerce(cls, value: Any) -> "StreamPromptCompletionChunk":
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, tuple):
+            token = str(value[0]) if len(value) > 0 else ""
+            is_final = bool(value[1]) if len(value) > 1 else False
+            finish_reason = str(value[2]) if len(value) > 2 and value[2] is not None else None
+            return cls(token=token, isFinal=is_final, finishReason=finish_reason)
+        if isinstance(value, dict):
+            token = str(value.get("token", ""))
+            is_final = bool(value.get("is_final", value.get("isFinal", False)))
+            finish_reason = value.get("finish_reason", value.get("finishReason"))
+            return cls(
+                token=token,
+                isFinal=is_final,
+                finishReason=str(finish_reason) if finish_reason is not None else None,
+            )
+        return cls(token=str(value))
+
+
 class GetPromptResult(Result):
     """The server's response to a prompts/get request from the client."""
 

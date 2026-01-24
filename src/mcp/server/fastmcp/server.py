@@ -515,8 +515,9 @@ class FastMCP(Generic[LifespanResultT]):
         - name: Prompt name
         - arguments: Prompt arguments
 
-        The handler should yield tokens (strings) or tuples of
-        (token, is_final, finish_reason).
+        The handler may yield `StreamPromptCompletionChunk`, strings,
+        tuples of (token, is_final, finish_reason), or dicts with
+        token/is_final/finish_reason keys.
         """
         return self._mcp_server.stream_prompt_completion()
 

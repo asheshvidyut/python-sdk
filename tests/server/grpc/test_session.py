@@ -173,8 +173,8 @@ async def test_session_stream_prompt_completion_streams_tokens():
 
     @server.stream_prompt_completion()
     async def stream_prompt_completion(name: str, arguments: dict[str, str] | None):
-        yield "hello"
-        yield ("world", True, "stop")
+        yield types.StreamPromptCompletionChunk(token="hello")
+        yield types.StreamPromptCompletionChunk(token="world", isFinal=True, finishReason="stop")
 
     servicer = McpGrpcServicer(server)
 

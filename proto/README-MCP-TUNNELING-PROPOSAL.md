@@ -148,6 +148,18 @@ Backpressure handling differs fundamentally between transports:
 
 This is an inherent transport difference. The streaming adapter preserves gRPC's backpressure end-to-end. For cursor-based transports, "backpressure" is implicit in the client's cursor request timing.
 
+## Transport Capabilities
+
+Streaming is a shared interface, but transports differ in duplex and flow control:
+
+| Transport | Server→Client Streaming | Client→Server Streaming | Duplex | Notes |
+|-----------|-------------------------|-------------------------|--------|-------|
+| gRPC | Yes | Yes | Full | True bidirectional streaming with backpressure |
+| SSE | Yes | No | Half | Server push only; client sends separate requests |
+| JSON-RPC | No | No | None | Cursor pagination emulates streaming |
+
+Adapters and bridges should preserve these realities rather than masking them.
+
 ## Compatibility of the Bridge Approach
 
 ### Compatibility Matrix
