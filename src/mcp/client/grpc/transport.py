@@ -39,6 +39,7 @@ try:
         ListToolsRequest,
         PingRequest,
         PromptRef,
+        RequestMeta,
         ReadResourceChunkedRequest,
         ResourceTemplateRef,
         SessionRequest,
@@ -106,6 +107,7 @@ class GrpcClientTransport(ClientTransportSession):
         self._session_task: asyncio.Task[None] | None = None
         self._session_requests: asyncio.Queue[SessionRequest] | None = None
         self._session_responses: dict[str, asyncio.Future[SessionResponse]] = {}
+        self._session_streams: dict[str, asyncio.Queue[SessionResponse]] = {}
         self._session_notifications: asyncio.Queue[SessionResponse] | None = None
 
     async def __aenter__(self) -> GrpcClientTransport:
@@ -154,6 +156,10 @@ class GrpcClientTransport(ClientTransportSession):
         try:
             async for response in stub.Session(request_generator()):
                 if response.in_reply_to:
+                    stream_queue = self._session_streams.get(response.in_reply_to)
+                    if stream_queue:
+                        await stream_queue.put(response)
+                        continue
                     future = self._session_responses.pop(response.in_reply_to, None)
                     if future:
                         future.set_result(response)
@@ -185,6 +191,27 @@ class GrpcClientTransport(ClientTransportSession):
         except Exception:
             self._session_responses.pop(request.message_id, None)
             raise
+
+    async def stream_session(self, request: SessionRequest) -> AsyncIterator[SessionResponse]:
+        """Stream responses for a Session request until StreamEnd or StreamError."""
+        if not request.message_id:
+            import uuid
+
+            request.message_id = str(uuid.uuid4())
+
+        stream_queue: asyncio.Queue[SessionResponse] = asyncio.Queue()
+        self._session_streams[request.message_id] = stream_queue
+        await self._session_requests.put(request)  # type: ignore
+
+        try:
+            while True:
+                response = await stream_queue.get()
+                yield response
+                payload = response.WhichOneof("payload")
+                if payload in ("stream_end", "stream_error"):
+                    break
+        finally:
+            self._session_streams.pop(request.message_id, None)
 
     def _ensure_connected(self) -> McpServiceStub:
         """Ensure we have an active stub."""
@@ -273,6 +300,62 @@ class GrpcClientTransport(ClientTransportSession):
             )
         else:
             raise ValueError(f"Unknown content type: {content_type}")
+
+    @staticmethod
+    def _extract_page_size_hint(
+        params: types.PaginatedRequestParams | None,
+    ) -> int | None:
+        if params is None:
+            return None
+        for key in ("page_size_hint", "pageSizeHint"):
+            value = getattr(params, key, None)
+            if value is not None:
+                try:
+                    return int(value)
+                except (TypeError, ValueError):
+                    return None
+        extra = getattr(params, "model_extra", None) or {}
+        for key in ("page_size_hint", "pageSizeHint"):
+            if key in extra:
+                try:
+                    return int(extra[key])
+                except (TypeError, ValueError):
+                    return None
+        return None
+
+    @staticmethod
+    def _build_request_meta(
+        params: types.PaginatedRequestParams | None,
+    ) -> RequestMeta | None:
+        if params is None or params.meta is None:
+            return None
+
+        meta_obj = params.meta
+        if isinstance(meta_obj, dict):
+            data: dict[str, Any] = dict(meta_obj)
+        else:
+            data = meta_obj.model_dump(exclude_none=True)
+
+        data.pop("progressToken", None)
+        data.pop("progress_token", None)
+
+        trace_id = data.pop("trace_id", None) or data.pop("traceId", None)
+        correlation_id = data.pop("correlation_id", None) or data.pop("correlationId", None)
+        extra = data.pop("extra", None)
+        if extra is None:
+            extra = data
+
+        if not trace_id and not correlation_id and not extra:
+            return None
+
+        meta = RequestMeta()
+        if trace_id:
+            meta.trace_id = str(trace_id)
+        if correlation_id:
+            meta.correlation_id = str(correlation_id)
+        if isinstance(extra, dict):
+            meta.extra.update({str(k): str(v) for k, v in extra.items()})
+        return meta
 
     # -------------------------------------------------------------------------
     # ClientTransportSession Implementation
@@ -374,19 +457,7 @@ class GrpcClientTransport(ClientTransportSession):
         cursor: str | None = None,
     ) -> types.ListResourcesResult:
         """List available resources."""
-        stub = self._ensure_connected()
-        
-        if cursor:
-            logger.warning("Cursors are not supported in gRPC streaming list_resources")
-
-        request = ListResourcesRequest()
-        
-        resources = []
-        try:
-            async for response in stub.ListResources(request):
-                resources.append(self._convert_resource(response.resource))
-        except grpc.RpcError as e:
-            raise self._map_error(e) from e
+        resources = [r async for r in self._stream_list_resources_native(cursor=cursor)]
 
         return types.ListResourcesResult(
             resources=resources,
@@ -398,27 +469,9 @@ class GrpcClientTransport(ClientTransportSession):
         cursor: str | None = None,
     ) -> types.ListResourceTemplatesResult:
         """List resource templates."""
-        stub = self._ensure_connected()
-
-        if cursor:
-            logger.warning("Cursors are not supported in gRPC streaming list_resource_templates")
-
-        request = ListResourceTemplatesRequest()
-
-        templates = []
-        try:
-            async for response in stub.ListResourceTemplates(request):
-                t = response.resource_template
-                templates.append(
-                    types.ResourceTemplate(
-                        uriTemplate=t.uri_template,
-                        name=t.name,
-                        description=t.description or None,
-                        mimeType=t.mime_type or None,
-                    )
-                )
-        except grpc.RpcError as e:
-            raise self._map_error(e) from e
+        templates = [
+            t async for t in self._stream_list_resource_templates_native(cursor=cursor)
+        ]
 
         return types.ListResourceTemplatesResult(
             resourceTemplates=templates,
@@ -547,19 +600,7 @@ class GrpcClientTransport(ClientTransportSession):
         cursor: str | None = None,
     ) -> types.ListPromptsResult:
         """List available prompts."""
-        stub = self._ensure_connected()
-
-        if cursor:
-            logger.warning("Cursors are not supported in gRPC streaming list_prompts")
-
-        request = ListPromptsRequest()
-        
-        prompts = []
-        try:
-            async for response in stub.ListPrompts(request):
-                prompts.append(self._convert_prompt(response.prompt))
-        except grpc.RpcError as e:
-            raise self._map_error(e) from e
+        prompts = [p async for p in self._stream_list_prompts_native(cursor=cursor)]
 
         return types.ListPromptsResult(
             prompts=prompts,
@@ -640,6 +681,19 @@ class GrpcClientTransport(ClientTransportSession):
         params: types.PaginatedRequestParams | None = None,
     ) -> types.ListToolsResult:
         """List available tools."""
+        tools = [t async for t in self._stream_list_tools_native(cursor=cursor, params=params)]
+
+        return types.ListToolsResult(
+            tools=tools,
+            nextCursor=None,
+        )
+
+    async def _stream_list_tools_native(
+        self,
+        *,
+        cursor: str | None = None,
+        params: types.PaginatedRequestParams | None = None,
+    ) -> AsyncIterator[types.Tool]:
         stub = self._ensure_connected()
 
         effective_cursor = params.cursor if params else cursor
@@ -647,18 +701,80 @@ class GrpcClientTransport(ClientTransportSession):
             logger.warning("Cursors are not supported in gRPC streaming list_tools")
 
         request = ListToolsRequest()
+        page_size_hint = self._extract_page_size_hint(params)
+        if page_size_hint is not None:
+            request.page_size_hint = page_size_hint
+        meta = self._build_request_meta(params)
+        if meta is not None:
+            request.meta.CopyFrom(meta)
 
-        tools = []
         try:
             async for response in stub.ListTools(request):
-                tools.append(self._convert_tool(response.tool))
+                yield self._convert_tool(response.tool)
         except grpc.RpcError as e:
             raise self._map_error(e) from e
 
-        return types.ListToolsResult(
-            tools=tools,
-            nextCursor=None,
-        )
+    async def _stream_list_resources_native(
+        self,
+        *,
+        cursor: str | None = None,
+    ) -> AsyncIterator[types.Resource]:
+        stub = self._ensure_connected()
+
+        if cursor:
+            logger.warning("Cursors are not supported in gRPC streaming list_resources")
+
+        request = ListResourcesRequest()
+
+        try:
+            async for response in stub.ListResources(request):
+                yield self._convert_resource(response.resource)
+        except grpc.RpcError as e:
+            raise self._map_error(e) from e
+
+    async def _stream_list_resource_templates_native(
+        self,
+        *,
+        cursor: str | None = None,
+    ) -> AsyncIterator[types.ResourceTemplate]:
+        stub = self._ensure_connected()
+
+        if cursor:
+            logger.warning(
+                "Cursors are not supported in gRPC streaming list_resource_templates"
+            )
+
+        request = ListResourceTemplatesRequest()
+
+        try:
+            async for response in stub.ListResourceTemplates(request):
+                t = response.resource_template
+                yield types.ResourceTemplate(
+                    uriTemplate=t.uri_template,
+                    name=t.name,
+                    description=t.description or None,
+                    mimeType=t.mime_type or None,
+                )
+        except grpc.RpcError as e:
+            raise self._map_error(e) from e
+
+    async def _stream_list_prompts_native(
+        self,
+        *,
+        cursor: str | None = None,
+    ) -> AsyncIterator[types.Prompt]:
+        stub = self._ensure_connected()
+
+        if cursor:
+            logger.warning("Cursors are not supported in gRPC streaming list_prompts")
+
+        request = ListPromptsRequest()
+
+        try:
+            async for response in stub.ListPrompts(request):
+                yield self._convert_prompt(response.prompt)
+        except grpc.RpcError as e:
+            raise self._map_error(e) from e
 
     async def send_roots_list_changed(self) -> None:
         """Send roots/list_changed notification.

@@ -885,6 +885,8 @@ name = "mcp"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
+    { name = "grpcio" },
+    { name = "grpcio-tools" },
     { name = "httpx" },
     { name = "httpx-sse" },
     { name = "jsonschema" },
@@ -942,7 +944,9 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "anyio", specifier = ">=4.5" },
+    { name = "grpcio", specifier = ">=1.76.0" },
     { name = "grpcio", marker = "extra == 'grpc'", specifier = ">=1.76.0" },
+    { name = "grpcio-tools", specifier = ">=1.76.0" },
     { name = "grpcio-tools", marker = "extra == 'grpc'", specifier = ">=1.76.0" },
     { name = "httpx", specifier = ">=0.27.1" },
     { name = "httpx-sse", specifier = ">=0.4" },

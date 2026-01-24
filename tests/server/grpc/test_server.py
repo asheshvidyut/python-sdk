@@ -8,6 +8,10 @@ from mcp.server.grpc import start_grpc_server
 import mcp.types as types
 from mcp.server.lowlevel.helper_types import ReadResourceContents
 
+import grpc
+from mcp.v1.mcp_pb2 import ListToolsRequest, SessionRequest
+from mcp.v1.mcp_pb2_grpc import McpServiceStub
+
 @pytest.mark.anyio
 async def test_grpc_server_end_to_end():
     # 1. Setup Server
@@ -157,5 +161,57 @@ async def test_grpc_server_end_to_end():
             prompt_res = await client.get_prompt("test_prompt")
             assert prompt_res.messages[0].content.text == "Hello Prompt"
             
+    finally:
+        await grpc_server.stop(0)
+
+
+@pytest.mark.anyio
+async def test_grpc_session_list_tools_stream_end():
+    server = Server("test-grpc-session-server")
+
+    @server.list_tools()
+    async def list_tools() -> list[types.Tool]:
+        return [
+            types.Tool(
+                name="session_tool",
+                description="Session tool",
+                inputSchema={"type": "object"},
+            )
+        ]
+
+    import socket
+
+    try:
+        sock = socket.socket()
+    except PermissionError:
+        pytest.skip("Socket creation not permitted in this environment")
+    sock.bind(("localhost", 0))
+    port = sock.getsockname()[1]
+    sock.close()
+
+    address = f"localhost:{port}"
+    grpc_server = await start_grpc_server(server, address)
+
+    try:
+        async with grpc.aio.insecure_channel(address) as channel:
+            stub = McpServiceStub(channel)
+
+            async def requests():
+                yield SessionRequest(message_id="req-1", list_tools=ListToolsRequest())
+
+            responses = []
+            async for response in stub.Session(requests()):
+                responses.append(response)
+                if response.WhichOneof("payload") == "stream_end":
+                    break
+
+            assert any(
+                response.WhichOneof("payload") == "list_tools" for response in responses
+            )
+            end = next(
+                response for response in responses if response.WhichOneof("payload") == "stream_end"
+            )
+            assert end.in_reply_to == "req-1"
+            assert end.stream_end.request_id == "req-1"
     finally:
         await grpc_server.stop(0)

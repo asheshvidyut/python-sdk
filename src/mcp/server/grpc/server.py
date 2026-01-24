@@ -11,11 +11,15 @@ from __future__ import annotations
 import asyncio
 import contextvars
 import logging
+import uuid
 from collections.abc import AsyncIterator
+from datetime import datetime, timezone
+from fnmatch import fnmatch
 from typing import Any, TypeVar
 
 import grpc
 from google.protobuf import struct_pb2
+from google.protobuf.timestamp_pb2 import Timestamp
 from pydantic import AnyUrl
 
 import mcp.types as types
@@ -42,6 +46,8 @@ from mcp.v1.mcp_pb2 import (
     ServerCapabilities,
     ServerInfo,
     SessionResponse,
+    StreamEnd,
+    StreamError,
     WatchResourcesResponse,
 )
 from mcp.v1.mcp_pb2_grpc import McpServiceServicer, add_McpServiceServicer_to_server
@@ -66,6 +72,7 @@ class GrpcServerSession(ServerTransportSession):
         # the persistent connection in stdio/SSE, as many RPCs are unary.
         # This session object acts primarily as a handle for capabilities.
         self._client_params: types.InitializeRequestParams | None = None
+        self._resource_watchers: list[tuple[list[str], asyncio.Queue[WatchResourcesResponse]]] = []
 
     @property
     def client_params(self) -> types.InitializeRequestParams | None:
@@ -135,7 +142,21 @@ class GrpcServerSession(ServerTransportSession):
         )
         
     async def send_resource_updated(self, uri: AnyUrl) -> None:
-        logger.warning("Resource updated notification dropped (not implemented for unary gRPC)")
+        if not self._resource_watchers:
+            return
+
+        timestamp = Timestamp()
+        timestamp.FromDatetime(datetime.now(timezone.utc))
+        uri_value = str(uri)
+
+        notification = WatchResourcesResponse(
+            uri=uri_value,
+            change_type=ResourceChangeType.RESOURCE_CHANGE_TYPE_MODIFIED,
+            timestamp=timestamp,
+        )
+        for patterns, queue in list(self._resource_watchers):
+            if any(fnmatch(uri_value, pattern) for pattern in patterns):
+                await queue.put(notification)
 
     async def send_resource_list_changed(self) -> None:
         logger.warning("Resource list changed notification dropped (not implemented for unary gRPC)")
@@ -161,6 +182,22 @@ class GrpcServerSession(ServerTransportSession):
     async def send_ping(self) -> types.EmptyResult:
         logger.warning("Ping request dropped (not implemented for unary gRPC)")
         return types.EmptyResult()
+
+    def register_resource_watch(
+        self,
+        patterns: list[str],
+    ) -> asyncio.Queue[WatchResourcesResponse]:
+        queue: asyncio.Queue[WatchResourcesResponse] = asyncio.Queue()
+        self._resource_watchers.append((patterns, queue))
+        return queue
+
+    def unregister_resource_watch(
+        self,
+        queue: asyncio.Queue[WatchResourcesResponse],
+    ) -> None:
+        self._resource_watchers = [
+            (patterns, q) for patterns, q in self._resource_watchers if q is not queue
+        ]
 
 
 class McpGrpcServicer(McpServiceServicer):
@@ -235,7 +272,95 @@ class McpGrpcServicer(McpServiceServicer):
             ]
         )
 
-    async def _execute_handler(self, request_type: type, request_obj: Any, context: grpc.ServicerContext) -> Any:
+    @staticmethod
+    def _make_session_response(in_reply_to: str, **kwargs: Any) -> SessionResponse:
+        return SessionResponse(
+            message_id=str(uuid.uuid4()),
+            in_reply_to=in_reply_to,
+            **kwargs,
+        )
+
+    async def _emit_stream_error(
+        self,
+        queue: asyncio.Queue[SessionResponse],
+        in_reply_to: str,
+        *,
+        code: int,
+        message: str,
+    ) -> None:
+        await queue.put(
+            self._make_session_response(
+                in_reply_to=in_reply_to,
+                stream_error=StreamError(code=code, message=message),
+            )
+        )
+
+    async def _iter_prompt_completion_chunks(
+        self,
+        name: str,
+        arguments: dict[str, str],
+    ) -> AsyncIterator[tuple[str, bool, str | None]]:
+        handler = getattr(self._server, "_stream_prompt_completion_handler", None)
+        if handler is None:
+            raise NotImplementedError("StreamPromptCompletion handler not registered")
+
+        result = handler(name, arguments)
+        if asyncio.iscoroutine(result):
+            result = await result
+
+        if hasattr(result, "__aiter__"):
+            async for chunk in result:  # type: ignore[assignment]
+                if isinstance(chunk, tuple):
+                    token = str(chunk[0])
+                    is_final = bool(chunk[1]) if len(chunk) > 1 else False
+                    finish_reason = (
+                        str(chunk[2]) if len(chunk) > 2 and chunk[2] is not None else None
+                    )
+                    yield token, is_final, finish_reason
+                elif isinstance(chunk, dict):
+                    token = str(chunk.get("token", ""))
+                    is_final = bool(chunk.get("is_final", False))
+                    finish_reason = chunk.get("finish_reason")
+                    yield token, is_final, finish_reason
+                else:
+                    yield str(chunk), False, None
+            return
+
+        for chunk in result:  # type: ignore[assignment]
+            if isinstance(chunk, tuple):
+                token = str(chunk[0])
+                is_final = bool(chunk[1]) if len(chunk) > 1 else False
+                finish_reason = str(chunk[2]) if len(chunk) > 2 and chunk[2] is not None else None
+                yield token, is_final, finish_reason
+            elif isinstance(chunk, dict):
+                token = str(chunk.get("token", ""))
+                is_final = bool(chunk.get("is_final", False))
+                finish_reason = chunk.get("finish_reason")
+                yield token, is_final, finish_reason
+            else:
+                yield str(chunk), False, None
+
+    def _convert_request_meta(self, meta: Any | None) -> types.RequestParams.Meta | None:
+        if meta is None:
+            return None
+        data = {
+            "trace_id": getattr(meta, "trace_id", None),
+            "correlation_id": getattr(meta, "correlation_id", None),
+        }
+        extra = dict(getattr(meta, "extra", {}))
+        data = {k: v for k, v in data.items() if v}
+        if not data and not extra:
+            return None
+        return types.RequestParams.Meta(progressToken=None, **data, **extra)
+
+    async def _execute_handler(
+        self,
+        request_type: type,
+        request_obj: Any,
+        context: grpc.ServicerContext,
+        *,
+        meta: types.RequestParams.Meta | None = None,
+    ) -> Any:
         """
         Execute a registered handler for the given request type.
         Sets up the request context needed by the handler.
@@ -246,11 +371,10 @@ class McpGrpcServicer(McpServiceServicer):
         else:
             # Set up request context
             # We use a unique ID for each request
-            import uuid
             token = request_ctx.set(
                 RequestContext(
                     request_id=str(uuid.uuid4()),
-                    meta=None,
+                    meta=meta,
                     session=self._session,
                     lifespan_context={},
                 )
@@ -264,6 +388,31 @@ class McpGrpcServicer(McpServiceServicer):
                 await context.abort(grpc.StatusCode.INTERNAL, str(e))
             finally:
                 request_ctx.reset(token)
+
+    async def _execute_handler_for_session(
+        self,
+        request_type: type,
+        request_obj: Any,
+        *,
+        request_id: str,
+        meta: types.RequestParams.Meta | None = None,
+    ) -> Any:
+        handler = self._server.request_handlers.get(request_type)
+        if not handler:
+            raise NotImplementedError(f"Method {request_type.__name__} not implemented")
+
+        token = request_ctx.set(
+            RequestContext(
+                request_id=request_id,
+                meta=meta,
+                session=self._session,
+                lifespan_context={},
+            )
+        )
+        try:
+            return await handler(request_obj)
+        finally:
+            request_ctx.reset(token)
 
     # -------------------------------------------------------------------------
     # RPC Implementations
@@ -327,10 +476,9 @@ class McpGrpcServicer(McpServiceServicer):
         true end-to-end streaming requires updates to mcp.server.lowlevel.server
         to support async generators.
         """
-        req = types.ListToolsRequest(
-            params=types.PaginatedRequestParams(cursor=None)
-        )
-        result = await self._execute_handler(types.ListToolsRequest, req, context)
+        req = types.ListToolsRequest(params=types.PaginatedRequestParams(cursor=None))
+        meta = self._convert_request_meta(request.meta) if request.HasField("meta") else None
+        result = await self._execute_handler(types.ListToolsRequest, req, context, meta=meta)
         
         if isinstance(result, types.ServerResult):
             # result.root is ListToolsResult
@@ -460,10 +608,14 @@ class McpGrpcServicer(McpServiceServicer):
         Note: Currently buffers all resources from the Server handler.
         Future optimization: Support async iterators in Server handlers.
         """
-        req = types.ListResourcesRequest(
-            params=types.PaginatedRequestParams(cursor=None)
+        req = types.ListResourcesRequest(params=types.PaginatedRequestParams(cursor=None))
+        meta = self._convert_request_meta(request.meta) if request.HasField("meta") else None
+        result = await self._execute_handler(
+            types.ListResourcesRequest,
+            req,
+            context,
+            meta=meta,
         )
-        result = await self._execute_handler(types.ListResourcesRequest, req, context)
         
         if isinstance(result, types.ServerResult):
             res_result = result.root
@@ -479,7 +631,13 @@ class McpGrpcServicer(McpServiceServicer):
         req = types.ListResourceTemplatesRequest(
             params=types.PaginatedRequestParams(cursor=None)
         )
-        result = await self._execute_handler(types.ListResourceTemplatesRequest, req, context)
+        meta = self._convert_request_meta(request.meta) if request.HasField("meta") else None
+        result = await self._execute_handler(
+            types.ListResourceTemplatesRequest,
+            req,
+            context,
+            meta=meta,
+        )
         
         if isinstance(result, types.ServerResult):
             res_result = result.root
@@ -591,16 +749,49 @@ class McpGrpcServicer(McpServiceServicer):
                                 is_final=is_last
                             )
 
+    async def WatchResources(self, request, context):
+        """Stream resource change notifications."""
+        patterns = list(request.uri_patterns)
+        queue = self._session.register_resource_watch(patterns)
+
+        try:
+            if request.include_initial:
+                req = types.ListResourcesRequest(
+                    params=types.PaginatedRequestParams(cursor=None)
+                )
+                result = await self._execute_handler(types.ListResourcesRequest, req, context)
+                if isinstance(result, types.ServerResult):
+                    timestamp = Timestamp()
+                    timestamp.FromDatetime(datetime.now(timezone.utc))
+                    for resource in result.root.resources:
+                        uri_value = str(resource.uri)
+                        if any(fnmatch(uri_value, pattern) for pattern in patterns):
+                            yield WatchResourcesResponse(
+                                uri=uri_value,
+                                change_type=ResourceChangeType.RESOURCE_CHANGE_TYPE_CREATED,
+                                timestamp=timestamp,
+                            )
+
+            while True:
+                notification = await queue.get()
+                yield notification
+        finally:
+            self._session.unregister_resource_watch(queue)
+
     async def ListPrompts(self, request, context):
         """
         List prompts.
         
         Note: Currently buffers results from the Server handler.
         """
-        req = types.ListPromptsRequest(
-            params=types.PaginatedRequestParams(cursor=None)
+        req = types.ListPromptsRequest(params=types.PaginatedRequestParams(cursor=None))
+        meta = self._convert_request_meta(request.meta) if request.HasField("meta") else None
+        result = await self._execute_handler(
+            types.ListPromptsRequest,
+            req,
+            context,
+            meta=meta,
         )
-        result = await self._execute_handler(types.ListPromptsRequest, req, context)
         
         if isinstance(result, types.ServerResult):
             prompts_result = result.root
@@ -667,6 +858,365 @@ class McpGrpcServicer(McpServiceServicer):
                 )
             )
         return CompleteResponse()
+
+    async def StreamPromptCompletion(self, request, context):
+        """Stream prompt completion tokens."""
+        arguments = dict(request.arguments)
+        try:
+            async for token, is_final, finish_reason in self._iter_prompt_completion_chunks(
+                request.name,
+                arguments,
+            ):
+                from mcp.v1.mcp_pb2 import StreamPromptCompletionResponse
+
+                yield StreamPromptCompletionResponse(
+                    token=token,
+                    is_final=is_final,
+                    finish_reason=finish_reason or "",
+                )
+        except NotImplementedError:
+            await context.abort(
+                grpc.StatusCode.UNIMPLEMENTED,
+                "StreamPromptCompletion handler not registered",
+            )
+
+    async def Session(self, request_iterator, context):
+        """Handle bidirectional Session stream with explicit StreamEnd signals."""
+        response_queue: asyncio.Queue[SessionResponse] = asyncio.Queue()
+        active_tasks: dict[str, asyncio.Task[None]] = {}
+        stop_sentinel: object = object()
+
+        async def handle_request(request) -> None:
+            request_id = request.message_id or str(uuid.uuid4())
+            payload_type = request.WhichOneof("payload")
+
+            try:
+                if payload_type == "initialize":
+                    response = await self.Initialize(request.initialize, context)
+                    await response_queue.put(
+                        self._make_session_response(in_reply_to=request_id, initialize=response)
+                    )
+                elif payload_type == "ping":
+                    response = await self.Ping(request.ping, context)
+                    await response_queue.put(
+                        self._make_session_response(in_reply_to=request_id, ping=response)
+                    )
+                elif payload_type == "call_tool":
+                    response = await self.CallTool(request.call_tool, context)
+                    await response_queue.put(
+                        self._make_session_response(in_reply_to=request_id, call_tool=response)
+                    )
+                elif payload_type == "read_resource":
+                    response = await self.ReadResource(request.read_resource, context)
+                    await response_queue.put(
+                        self._make_session_response(in_reply_to=request_id, read_resource=response)
+                    )
+                elif payload_type == "get_prompt":
+                    response = await self.GetPrompt(request.get_prompt, context)
+                    await response_queue.put(
+                        self._make_session_response(in_reply_to=request_id, get_prompt=response)
+                    )
+                elif payload_type == "complete":
+                    response = await self.Complete(request.complete, context)
+                    await response_queue.put(
+                        self._make_session_response(in_reply_to=request_id, complete=response)
+                    )
+                elif payload_type == "list_tools":
+                    req = types.ListToolsRequest(
+                        params=types.PaginatedRequestParams(cursor=None)
+                    )
+                    meta = (
+                        self._convert_request_meta(request.list_tools.meta)
+                        if request.list_tools.HasField("meta")
+                        else None
+                    )
+                    result = await self._execute_handler_for_session(
+                        types.ListToolsRequest,
+                        req,
+                        request_id=request_id,
+                        meta=meta,
+                    )
+                    if isinstance(result, types.ServerResult):
+                        for tool in result.root.tools:
+                            await response_queue.put(
+                                self._make_session_response(
+                                    in_reply_to=request_id,
+                                    list_tools=ListToolsResponse(
+                                        tool=self._convert_tool_to_proto(tool)
+                                    ),
+                                )
+                            )
+                        await response_queue.put(
+                            self._make_session_response(
+                                in_reply_to=request_id,
+                                stream_end=StreamEnd(request_id=request_id),
+                            )
+                        )
+                    else:
+                        await self._emit_stream_error(
+                            response_queue,
+                            request_id,
+                            code=types.INTERNAL_ERROR,
+                            message="Unexpected list_tools result",
+                        )
+                elif payload_type == "list_resources":
+                    req = types.ListResourcesRequest(
+                        params=types.PaginatedRequestParams(cursor=None)
+                    )
+                    meta = (
+                        self._convert_request_meta(request.list_resources.meta)
+                        if request.list_resources.HasField("meta")
+                        else None
+                    )
+                    result = await self._execute_handler_for_session(
+                        types.ListResourcesRequest,
+                        req,
+                        request_id=request_id,
+                        meta=meta,
+                    )
+                    if isinstance(result, types.ServerResult):
+                        for resource in result.root.resources:
+                            await response_queue.put(
+                                self._make_session_response(
+                                    in_reply_to=request_id,
+                                    list_resources=ListResourcesResponse(
+                                        resource=self._convert_resource_to_proto(resource)
+                                    ),
+                                )
+                            )
+                        await response_queue.put(
+                            self._make_session_response(
+                                in_reply_to=request_id,
+                                stream_end=StreamEnd(request_id=request_id),
+                            )
+                        )
+                    else:
+                        await self._emit_stream_error(
+                            response_queue,
+                            request_id,
+                            code=types.INTERNAL_ERROR,
+                            message="Unexpected list_resources result",
+                        )
+                elif payload_type == "list_resource_templates":
+                    req = types.ListResourceTemplatesRequest(
+                        params=types.PaginatedRequestParams(cursor=None)
+                    )
+                    meta = (
+                        self._convert_request_meta(request.list_resource_templates.meta)
+                        if request.list_resource_templates.HasField("meta")
+                        else None
+                    )
+                    result = await self._execute_handler_for_session(
+                        types.ListResourceTemplatesRequest,
+                        req,
+                        request_id=request_id,
+                        meta=meta,
+                    )
+                    if isinstance(result, types.ServerResult):
+                        from mcp.v1.mcp_pb2 import ResourceTemplate
+                        for template in result.root.resourceTemplates:
+                            await response_queue.put(
+                                self._make_session_response(
+                                    in_reply_to=request_id,
+                                    list_resource_templates=ListResourceTemplatesResponse(
+                                        resource_template=ResourceTemplate(
+                                            uri_template=template.uriTemplate,
+                                            name=template.name,
+                                            description=template.description or "",
+                                            mime_type=template.mimeType or "",
+                                        )
+                                    ),
+                                )
+                            )
+                        await response_queue.put(
+                            self._make_session_response(
+                                in_reply_to=request_id,
+                                stream_end=StreamEnd(request_id=request_id),
+                            )
+                        )
+                    else:
+                        await self._emit_stream_error(
+                            response_queue,
+                            request_id,
+                            code=types.INTERNAL_ERROR,
+                            message="Unexpected list_resource_templates result",
+                        )
+                elif payload_type == "list_prompts":
+                    req = types.ListPromptsRequest(
+                        params=types.PaginatedRequestParams(cursor=None)
+                    )
+                    meta = (
+                        self._convert_request_meta(request.list_prompts.meta)
+                        if request.list_prompts.HasField("meta")
+                        else None
+                    )
+                    result = await self._execute_handler_for_session(
+                        types.ListPromptsRequest,
+                        req,
+                        request_id=request_id,
+                        meta=meta,
+                    )
+                    if isinstance(result, types.ServerResult):
+                        for prompt in result.root.prompts:
+                            await response_queue.put(
+                                self._make_session_response(
+                                    in_reply_to=request_id,
+                                    list_prompts=ListPromptsResponse(
+                                        prompt=self._convert_prompt_to_proto(prompt)
+                                    ),
+                                )
+                            )
+                        await response_queue.put(
+                            self._make_session_response(
+                                in_reply_to=request_id,
+                                stream_end=StreamEnd(request_id=request_id),
+                            )
+                        )
+                    else:
+                        await self._emit_stream_error(
+                            response_queue,
+                            request_id,
+                            code=types.INTERNAL_ERROR,
+                            message="Unexpected list_prompts result",
+                        )
+                elif payload_type == "read_resource_chunked":
+                    stream = self.ReadResourceChunked(request.read_resource_chunked, context)
+                    async for chunk in stream:
+                        await response_queue.put(
+                            self._make_session_response(
+                                in_reply_to=request_id,
+                                resource_chunk=chunk,
+                            )
+                        )
+                    await response_queue.put(
+                        self._make_session_response(
+                            in_reply_to=request_id,
+                            stream_end=StreamEnd(request_id=request_id),
+                        )
+                    )
+                elif payload_type == "watch_resources":
+                    patterns = list(request.watch_resources.uri_patterns)
+                    queue = self._session.register_resource_watch(patterns)
+                    try:
+                        if request.watch_resources.include_initial:
+                            req = types.ListResourcesRequest(
+                                params=types.PaginatedRequestParams(cursor=None)
+                            )
+                            result = await self._execute_handler_for_session(
+                                types.ListResourcesRequest,
+                                req,
+                                request_id=request_id,
+                            )
+                            if isinstance(result, types.ServerResult):
+                                timestamp = Timestamp()
+                                timestamp.FromDatetime(datetime.now(timezone.utc))
+                                for resource in result.root.resources:
+                                    uri_value = str(resource.uri)
+                                    if any(fnmatch(uri_value, pattern) for pattern in patterns):
+                                        await response_queue.put(
+                                            self._make_session_response(
+                                                in_reply_to=request_id,
+                                                resource_notification=WatchResourcesResponse(
+                                                    uri=uri_value,
+                                                    change_type=ResourceChangeType.RESOURCE_CHANGE_TYPE_CREATED,
+                                                    timestamp=timestamp,
+                                                ),
+                                            )
+                                        )
+
+                        while True:
+                            notification = await queue.get()
+                            await response_queue.put(
+                                self._make_session_response(
+                                    in_reply_to=request_id,
+                                    resource_notification=notification,
+                                )
+                            )
+                    finally:
+                        self._session.unregister_resource_watch(queue)
+                elif payload_type == "stream_prompt_completion":
+                    arguments = dict(request.stream_prompt_completion.arguments)
+                    try:
+                        async for token, is_final, finish_reason in self._iter_prompt_completion_chunks(
+                            request.stream_prompt_completion.name,
+                            arguments,
+                        ):
+                            from mcp.v1.mcp_pb2 import StreamPromptCompletionResponse
+
+                            await response_queue.put(
+                                self._make_session_response(
+                                    in_reply_to=request_id,
+                                    completion_chunk=StreamPromptCompletionResponse(
+                                        token=token,
+                                        is_final=is_final,
+                                        finish_reason=finish_reason or "",
+                                    ),
+                                )
+                            )
+                        await response_queue.put(
+                            self._make_session_response(
+                                in_reply_to=request_id,
+                                stream_end=StreamEnd(request_id=request_id),
+                            )
+                        )
+                    except NotImplementedError:
+                        await self._emit_stream_error(
+                            response_queue,
+                            request_id,
+                            code=types.METHOD_NOT_FOUND,
+                            message="StreamPromptCompletion handler not registered",
+                        )
+                else:
+                    await self._emit_stream_error(
+                        response_queue,
+                        request_id,
+                        code=types.METHOD_NOT_FOUND,
+                        message=f"Unsupported session payload: {payload_type}",
+                    )
+            except Exception as exc:
+                logger.exception("Session handler error")
+                await self._emit_stream_error(
+                    response_queue,
+                    request_id,
+                    code=types.INTERNAL_ERROR,
+                    message=str(exc),
+                )
+
+        async def consume_requests() -> None:
+            async for request in request_iterator:
+                payload_type = request.WhichOneof("payload")
+                if payload_type == "cancel":
+                    cancel_id = request.cancel.request_id
+                    task = active_tasks.pop(cancel_id, None)
+                    if task:
+                        task.cancel()
+                        await response_queue.put(
+                            self._make_session_response(
+                                in_reply_to=cancel_id,
+                                stream_end=StreamEnd(request_id=cancel_id),
+                            )
+                        )
+                    continue
+
+                if not request.message_id:
+                    request.message_id = str(uuid.uuid4())
+
+                task = asyncio.create_task(handle_request(request))
+                active_tasks[request.message_id] = task
+
+            if active_tasks:
+                await asyncio.gather(*active_tasks.values(), return_exceptions=True)
+            await response_queue.put(stop_sentinel)  # type: ignore[arg-type]
+
+        producer = asyncio.create_task(consume_requests())
+
+        while True:
+            response = await response_queue.get()
+            if response is stop_sentinel:
+                break
+            yield response
+
+        producer.cancel()
 
 
 async def start_grpc_server(
