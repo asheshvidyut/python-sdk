@@ -69,6 +69,9 @@ from mcp.v1.mcp_pb2_grpc import McpServiceServicer, add_McpServiceServicer_to_se
 
 logger = logging.getLogger(__name__)
 
+PROGRESS_POLL_TIMEOUT_SECONDS = 0.1
+WATCH_RESOURCES_POLL_TIMEOUT_SECONDS = 1.0
+
 LifespanResultT = TypeVar("LifespanResultT")
 RequestT = TypeVar("RequestT")
 
@@ -564,7 +567,7 @@ class McpGrpcServicer(McpServiceServicer):
                     try:
                         update = await asyncio.wait_for(
                             progress_queue.get(),
-                            timeout=0.1,
+                            timeout=PROGRESS_POLL_TIMEOUT_SECONDS,
                         )
                         yield update
                     except asyncio.TimeoutError:
@@ -854,7 +857,10 @@ class McpGrpcServicer(McpServiceServicer):
 
             while True:
                 try:
-                    notification = await asyncio.wait_for(queue.get(), timeout=1.0)
+                    notification = await asyncio.wait_for(
+                        queue.get(),
+                        timeout=WATCH_RESOURCES_POLL_TIMEOUT_SECONDS,
+                    )
                     yield notification
                 except asyncio.TimeoutError:
                     # Check if client disconnected
@@ -1232,7 +1238,7 @@ class McpGrpcServicer(McpServiceServicer):
                 try:
                     notification = await asyncio.wait_for(
                         queue.get(),
-                        timeout=1.0,
+                        timeout=WATCH_RESOURCES_POLL_TIMEOUT_SECONDS,
                     )
                 except asyncio.TimeoutError:
                     continue
@@ -1253,7 +1259,6 @@ class McpGrpcServicer(McpServiceServicer):
         *,
         request_id: str,
         response_queue: asyncio.Queue[SessionResponse],
-        session: GrpcServerSession,
     ) -> None:
         arguments = dict(request.stream_prompt_completion.arguments)
         try:
@@ -1392,7 +1397,6 @@ class McpGrpcServicer(McpServiceServicer):
                         request,
                         request_id=request_id,
                         response_queue=response_queue,
-                        session=session,
                     )
                 else:
                     await self._emit_stream_error(
