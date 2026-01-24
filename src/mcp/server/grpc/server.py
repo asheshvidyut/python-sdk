@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import contextvars
 import logging
 import uuid
 from collections.abc import AsyncIterator
@@ -20,6 +19,7 @@ from typing import Any, TypeVar
 
 import grpc
 from google.protobuf import struct_pb2
+from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
 from pydantic import AnyUrl
 
@@ -32,35 +32,36 @@ from mcp.v1.mcp_pb2 import (
     CallToolWithProgressResponse,
     CompleteResponse,
     CompletionResult,
+    Content,
     GetPromptResponse,
+    ImageContent,
     InitializeResponse,
     ListPromptsResponse,
     ListResourcesResponse,
     ListResourceTemplatesResponse,
     ListToolsResponse,
     PingResponse,
-    PromptMessage,
     ProgressNotification,
     ProgressToken,
-    ReadResourceChunkedResponse,
-    ReadResourceResponse,
-    ResourceChangeType,
-    ResourceContents,
-    Resource,
-    ResourceTemplate,
     Prompt,
     PromptArgument,
-    Tool,
-    Content,
-    ImageContent,
-    TextContent,
+    PromptMessage,
+    ReadResourceChunkedResponse,
+    ReadResourceResponse,
+    Resource,
+    ResourceChangeType,
+    ResourceContents,
+    ResourceTemplate,
     Role,
     ServerCapabilities,
     ServerInfo,
     SessionResponse,
-    StreamPromptCompletionResponse,
     StreamEnd,
     StreamError,
+    StreamPromptCompletionResponse,
+    StreamToolCallsResponse,
+    TextContent,
+    Tool,
     ToolResult,
     WatchResourcesResponse,
 )
@@ -75,14 +76,14 @@ RequestT = TypeVar("RequestT")
 class GrpcServerSession(ServerTransportSession):
     """
     gRPC implementation of ServerTransportSession.
-    
+
     This session implementation handles the context for gRPC requests,
     bridging the gap between the abstract ServerSession interface and
     gRPC's execution model.
     """
-    
+
     def __init__(self) -> None:
-        # In gRPC, we don't manage the stream lifecycle the same way as 
+        # In gRPC, we don't manage the stream lifecycle the same way as
         # the persistent connection in stdio/SSE, as many RPCs are unary.
         # This session object acts primarily as a handle for capabilities.
         self._client_params: types.InitializeRequestParams | None = None
@@ -135,10 +136,7 @@ class GrpcServerSession(ServerTransportSession):
         # For unary RPCs, we can't push log messages back easily unless
         # we are in the Session bidirectional stream.
         # TODO: Implement side-channel logging for Session stream
-        logger.warning(
-            "Log message dropped (not implemented for unary gRPC): %s: %s", 
-            level, data
-        )
+        logger.warning("Log message dropped (not implemented for unary gRPC): %s: %s", level, data)
 
     async def send_progress_notification(
         self,
@@ -150,11 +148,8 @@ class GrpcServerSession(ServerTransportSession):
     ) -> None:
         # This is handled by specific streaming RPCs (CallToolWithProgress)
         # or the Session stream. If called from a unary context, we log warning.
-        logger.warning(
-            "Progress notification dropped (not implemented for unary gRPC): %s", 
-            progress
-        )
-        
+        logger.warning("Progress notification dropped (not implemented for unary gRPC): %s", progress)
+
     async def send_resource_updated(self, uri: AnyUrl) -> None:
         if not self._resource_watchers:
             return
@@ -209,9 +204,7 @@ class GrpcServerSession(ServerTransportSession):
         self,
         queue: asyncio.Queue[WatchResourcesResponse],
     ) -> None:
-        self._resource_watchers = [
-            (patterns, q) for patterns, q in self._resource_watchers if q is not queue
-        ]
+        self._resource_watchers = [(patterns, q) for patterns, q in self._resource_watchers if q is not queue]
 
 
 class McpGrpcServicer(McpServiceServicer):
@@ -238,10 +231,11 @@ class McpGrpcServicer(McpServiceServicer):
     @staticmethod
     def _struct_to_dict(struct: struct_pb2.Struct) -> dict[str, Any]:
         """Convert protobuf Struct to Python dict."""
-        from google.protobuf.json_format import MessageToDict
         return MessageToDict(struct)
 
-    def _convert_content_to_proto(self, content: types.TextContent | types.ImageContent | types.EmbeddedResource) -> Any:
+    def _convert_content_to_proto(
+        self, content: types.TextContent | types.ImageContent | types.EmbeddedResource
+    ) -> Any:
         """Convert MCP Content to proto Content."""
         if isinstance(content, types.TextContent):
             return Content(text=TextContent(text=content.text))
@@ -253,9 +247,7 @@ class McpGrpcServicer(McpServiceServicer):
     def _convert_tool_to_proto(self, tool: types.Tool) -> Any:
         """Convert MCP Tool to proto Tool."""
         return Tool(
-            name=tool.name,
-            description=tool.description or "",
-            input_schema=self._dict_to_struct(tool.inputSchema)
+            name=tool.name, description=tool.description or "", input_schema=self._dict_to_struct(tool.inputSchema)
         )
 
     def _convert_resource_to_proto(self, resource: types.Resource) -> Any:
@@ -266,19 +258,16 @@ class McpGrpcServicer(McpServiceServicer):
             description=resource.description or "",
             mime_type=resource.mimeType or "",
         )
-        
+
     def _convert_prompt_to_proto(self, prompt: types.Prompt) -> Any:
         """Convert MCP Prompt to proto Prompt."""
         return Prompt(
             name=prompt.name,
             description=prompt.description or "",
             arguments=[
-                PromptArgument(
-                    name=arg.name,
-                    description=arg.description or "",
-                    required=arg.required or False
-                ) for arg in (prompt.arguments or [])
-            ]
+                PromptArgument(name=arg.name, description=arg.description or "", required=arg.required or False)
+                for arg in (prompt.arguments or [])
+            ],
         )
 
     @staticmethod
@@ -381,7 +370,7 @@ class McpGrpcServicer(McpServiceServicer):
                     lifespan_context={},
                 )
             )
-            
+
             try:
                 result = await handler(request_obj)
                 return result
@@ -423,28 +412,40 @@ class McpGrpcServicer(McpServiceServicer):
 
     async def Initialize(self, request, context):
         """Initialize the session."""
-        
+
         # Populate session with client params
+        roots_cap = None
+        if request.capabilities.HasField("roots"):
+            roots_cap = types.RootsCapability(listChanged=request.capabilities.roots.list_changed)
+
+        sampling_cap = None
+        if request.capabilities.HasField("sampling"):
+            sampling_cap = types.SamplingCapability()
+
+        experimental_cap = None
+        if request.capabilities.HasField("experimental"):
+            experimental_cap = dict(request.capabilities.experimental.capabilities.items())
+
         self._session._client_params = types.InitializeRequestParams(
             protocolVersion=request.protocol_version,
             capabilities=types.ClientCapabilities(
-                roots=types.RootsCapability(listChanged=request.capabilities.roots.list_changed) if request.capabilities.HasField("roots") else None,
-                sampling=types.SamplingCapability() if request.capabilities.HasField("sampling") else None,
-                experimental={k: v for k, v in request.capabilities.experimental.capabilities.items()} if request.capabilities.HasField("experimental") else None
+                roots=roots_cap,
+                sampling=sampling_cap,
+                experimental=experimental_cap,
             ),
             clientInfo=types.Implementation(
                 name=request.client_info.name,
-                version=request.client_info.version
-            )
+                version=request.client_info.version,
+            ),
         )
 
         # Convert proto to internal options
         # We manually construct what the server expects for initialization
         # The Server.create_initialization_options normally takes internal types
         # Here we are just bridging the handshake
-        
+
         init_opts = self._server.create_initialization_options()
-        
+
         # Convert internal ServerCapabilities to proto ServerCapabilities
         caps = ServerCapabilities()
         if init_opts.capabilities.prompts:
@@ -454,15 +455,12 @@ class McpGrpcServicer(McpServiceServicer):
             caps.resources.list_changed = init_opts.capabilities.resources.listChanged or False
         if init_opts.capabilities.tools:
             caps.tools.list_changed = init_opts.capabilities.tools.listChanged or False
-            
+
         return InitializeResponse(
             protocol_version=types.LATEST_PROTOCOL_VERSION,
-            server_info=ServerInfo(
-                name=init_opts.server_name,
-                version=init_opts.server_version
-            ),
+            server_info=ServerInfo(name=init_opts.server_name, version=init_opts.server_version),
             capabilities=caps,
-            instructions=init_opts.instructions or ""
+            instructions=init_opts.instructions or "",
         )
 
     async def Ping(self, request, context):
@@ -473,7 +471,7 @@ class McpGrpcServicer(McpServiceServicer):
     async def ListTools(self, request, context):
         """
         List available tools.
-        
+
         Note: The underlying Server implementation currently collects all tools
         into a list before returning. While we stream the response to the client,
         true end-to-end streaming requires updates to mcp.server.lowlevel.server
@@ -482,7 +480,7 @@ class McpGrpcServicer(McpServiceServicer):
         req = types.ListToolsRequest(params=types.PaginatedRequestParams(cursor=None))
         meta = self._convert_request_meta(request.meta) if request.HasField("meta") else None
         result = await self._execute_handler(types.ListToolsRequest, req, context, meta=meta)
-        
+
         if isinstance(result, types.ServerResult):
             # result.root is ListToolsResult
             tools_result = result.root
@@ -492,19 +490,15 @@ class McpGrpcServicer(McpServiceServicer):
     async def CallTool(self, request, context):
         """Call a tool (unary)."""
         req = types.CallToolRequest(
-            params=types.CallToolRequestParams(
-                name=request.name,
-                arguments=self._struct_to_dict(request.arguments)
-            )
+            params=types.CallToolRequestParams(name=request.name, arguments=self._struct_to_dict(request.arguments))
         )
-        
+
         result = await self._execute_handler(types.CallToolRequest, req, context)
-        
+
         if isinstance(result, types.ServerResult):
             call_result = result.root
             return CallToolResponse(
-                content=[self._convert_content_to_proto(c) for c in call_result.content],
-                is_error=call_result.isError
+                content=[self._convert_content_to_proto(c) for c in call_result.content], is_error=call_result.isError
             )
         return CallToolResponse(is_error=True)
 
@@ -512,45 +506,42 @@ class McpGrpcServicer(McpServiceServicer):
         """Call a tool with streaming progress updates."""
         # This requires a special handler execution that captures progress notifications
         # and streams them back.
-        
+
         # We need a custom session that intercepts progress
         progress_queue = asyncio.Queue()
-        
+
         class StreamingSession(GrpcServerSession):
-            async def send_progress_notification(self, progress_token, progress, total=None, message=None, related_request_id=None):
+            async def send_progress_notification(
+                self, progress_token, progress, total=None, message=None, related_request_id=None
+            ):
                 token_msg = ProgressToken()
                 if isinstance(progress_token, int):
                     token_msg.int_token = progress_token
                 else:
                     token_msg.string_token = str(progress_token)
-                    
+
                 await progress_queue.put(
                     CallToolWithProgressResponse(
                         progress=ProgressNotification(
-                            progress_token=token_msg,
-                            progress=progress,
-                            total=total or 0.0,
-                            message=message or ""
+                            progress_token=token_msg, progress=progress, total=total or 0.0, message=message or ""
                         )
                     )
                 )
 
         req = types.CallToolRequest(
-            params=types.CallToolRequestParams(
-                name=request.name,
-                arguments=self._struct_to_dict(request.arguments)
-            )
+            params=types.CallToolRequestParams(name=request.name, arguments=self._struct_to_dict(request.arguments))
         )
-        
+
         handler = self._server.request_handlers.get(types.CallToolRequest)
         if not handler:
             await context.abort(grpc.StatusCode.UNIMPLEMENTED, "Tool execution not implemented")
         else:
+
             async def run_handler():
                 streaming_session = StreamingSession()
                 # Inherit client params/capabilities from the main session
                 streaming_session._client_params = self._session._client_params
-                
+
                 token = request_ctx.set(
                     RequestContext(
                         request_id=str(uuid.uuid4()),
@@ -601,10 +592,87 @@ class McpGrpcServicer(McpServiceServicer):
                 while not progress_queue.empty():
                     yield progress_queue.get_nowait()
 
+    async def StreamToolCalls(self, request_iterator, context):
+        """
+        Stream multiple tool calls with parallel execution.
+
+        Client streams tool call requests, server streams results as they complete.
+        Results may arrive in different order than requests.
+        """
+        active_tasks: dict[str, asyncio.Task[StreamToolCallsResponse]] = {}
+        response_queue: asyncio.Queue[StreamToolCallsResponse | None] = asyncio.Queue()
+
+        async def execute_tool(request_id: str, name: str, arguments: dict[str, Any]) -> None:
+            """Execute a single tool and put result in queue."""
+            try:
+                req = types.CallToolRequest(params=types.CallToolRequestParams(name=name, arguments=arguments))
+                result = await self._execute_handler(types.CallToolRequest, req, context)
+
+                if isinstance(result, types.ServerResult):
+                    call_result = result.root
+                    await response_queue.put(
+                        StreamToolCallsResponse(
+                            request_id=request_id,
+                            success=ToolResult(
+                                content=[self._convert_content_to_proto(c) for c in call_result.content],
+                                is_error=call_result.isError,
+                            ),
+                        )
+                    )
+                else:
+                    await response_queue.put(
+                        StreamToolCallsResponse(
+                            request_id=request_id,
+                            error=StreamError(
+                                code=types.INTERNAL_ERROR,
+                                message="Unexpected tool result type",
+                            ),
+                        )
+                    )
+            except Exception as e:
+                logger.exception("Error executing tool %s", name)
+                await response_queue.put(
+                    StreamToolCallsResponse(
+                        request_id=request_id,
+                        error=StreamError(
+                            code=types.INTERNAL_ERROR,
+                            message=str(e),
+                        ),
+                    )
+                )
+            finally:
+                active_tasks.pop(request_id, None)
+
+        async def consume_requests() -> None:
+            """Consume incoming requests and spawn tasks."""
+            async for request in request_iterator:
+                request_id = request.request_id or str(uuid.uuid4())
+                arguments = self._struct_to_dict(request.arguments)
+                task = asyncio.create_task(execute_tool(request_id, request.name, arguments))
+                active_tasks[request_id] = task
+
+            # Wait for all tasks to complete
+            if active_tasks:
+                await asyncio.gather(*list(active_tasks.values()), return_exceptions=True)
+            await response_queue.put(None)  # Signal completion
+
+        producer = asyncio.create_task(consume_requests())
+
+        try:
+            while True:
+                response = await response_queue.get()
+                if response is None:
+                    break
+                yield response
+        finally:
+            producer.cancel()
+            for task in list(active_tasks.values()):
+                task.cancel()
+
     async def ListResources(self, request, context):
         """
         List resources.
-        
+
         Note: Currently buffers all resources from the Server handler.
         Future optimization: Support async iterators in Server handlers.
         """
@@ -616,7 +684,7 @@ class McpGrpcServicer(McpServiceServicer):
             context,
             meta=meta,
         )
-        
+
         if isinstance(result, types.ServerResult):
             res_result = result.root
             for r in res_result.resources:
@@ -625,12 +693,10 @@ class McpGrpcServicer(McpServiceServicer):
     async def ListResourceTemplates(self, request, context):
         """
         List resource templates.
-        
+
         Note: Currently buffers results from the Server handler.
         """
-        req = types.ListResourceTemplatesRequest(
-            params=types.PaginatedRequestParams(cursor=None)
-        )
+        req = types.ListResourceTemplatesRequest(params=types.PaginatedRequestParams(cursor=None))
         meta = self._convert_request_meta(request.meta) if request.HasField("meta") else None
         result = await self._execute_handler(
             types.ListResourceTemplatesRequest,
@@ -638,7 +704,7 @@ class McpGrpcServicer(McpServiceServicer):
             context,
             meta=meta,
         )
-        
+
         if isinstance(result, types.ServerResult):
             res_result = result.root
             for t in res_result.resourceTemplates:
@@ -647,38 +713,33 @@ class McpGrpcServicer(McpServiceServicer):
                         uri_template=t.uriTemplate,
                         name=t.name,
                         description=t.description or "",
-                        mime_type=t.mimeType or ""
+                        mime_type=t.mimeType or "",
                     )
                 )
 
     async def ReadResource(self, request, context):
         """Read a resource."""
-        req = types.ReadResourceRequest(
-            params=types.ReadResourceRequestParams(uri=AnyUrl(request.uri))
-        )
+        req = types.ReadResourceRequest(params=types.ReadResourceRequestParams(uri=AnyUrl(request.uri)))
         result = await self._execute_handler(types.ReadResourceRequest, req, context)
-        
+
         if isinstance(result, types.ServerResult):
             read_result = result.root
             contents = []
             for c in read_result.contents:
-                msg = ResourceContents(
-                    uri=str(c.uri),
-                    mime_type=c.mimeType or ""
-                )
+                msg = ResourceContents(uri=str(c.uri), mime_type=c.mimeType or "")
                 if isinstance(c, types.TextResourceContents):
                     msg.text = c.text
                 elif isinstance(c, types.BlobResourceContents):
                     msg.blob = base64.b64decode(c.blob)
                 contents.append(msg)
-                
+
             return ReadResourceResponse(contents=contents)
         return ReadResourceResponse()
 
     async def ReadResourceChunked(self, request, context):
         """
         Read a resource in chunks.
-        
+
         Note: The underlying read_resource handler currently returns the full content
         (or a full list of contents), which we then chunk. True streaming from the
         source is not yet supported by the Server class.
@@ -701,9 +762,7 @@ class McpGrpcServicer(McpServiceServicer):
         session: GrpcServerSession,
         use_session: bool,
     ) -> AsyncIterator[ReadResourceChunkedResponse]:
-        req = types.ReadResourceRequest(
-            params=types.ReadResourceRequestParams(uri=AnyUrl(request.uri))
-        )
+        req = types.ReadResourceRequest(params=types.ReadResourceRequestParams(uri=AnyUrl(request.uri)))
 
         # We reuse the standard ReadResource handler
         # Note: Ideally the handler would support yielding chunks, but for now
@@ -779,9 +838,7 @@ class McpGrpcServicer(McpServiceServicer):
 
         try:
             if request.include_initial:
-                req = types.ListResourcesRequest(
-                    params=types.PaginatedRequestParams(cursor=None)
-                )
+                req = types.ListResourcesRequest(params=types.PaginatedRequestParams(cursor=None))
                 result = await self._execute_handler(types.ListResourcesRequest, req, context)
                 if isinstance(result, types.ServerResult):
                     timestamp = Timestamp()
@@ -796,15 +853,23 @@ class McpGrpcServicer(McpServiceServicer):
                             )
 
             while True:
-                notification = await queue.get()
-                yield notification
+                try:
+                    notification = await asyncio.wait_for(queue.get(), timeout=1.0)
+                    yield notification
+                except asyncio.TimeoutError:
+                    # Check if client disconnected
+                    if context.cancelled():
+                        break
+                    continue
+                except asyncio.CancelledError:
+                    break
         finally:
             self._session.unregister_resource_watch(queue)
 
     async def ListPrompts(self, request, context):
         """
         List prompts.
-        
+
         Note: Currently buffers results from the Server handler.
         """
         req = types.ListPromptsRequest(params=types.PaginatedRequestParams(cursor=None))
@@ -815,7 +880,7 @@ class McpGrpcServicer(McpServiceServicer):
             context,
             meta=meta,
         )
-        
+
         if isinstance(result, types.ServerResult):
             prompts_result = result.root
             for p in prompts_result.prompts:
@@ -824,28 +889,19 @@ class McpGrpcServicer(McpServiceServicer):
     async def GetPrompt(self, request, context):
         """Get a prompt."""
         req = types.GetPromptRequest(
-            params=types.GetPromptRequestParams(
-                name=request.name,
-                arguments=dict(request.arguments)
-            )
+            params=types.GetPromptRequestParams(name=request.name, arguments=dict(request.arguments))
         )
         result = await self._execute_handler(types.GetPromptRequest, req, context)
-        
+
         if isinstance(result, types.ServerResult):
             prompt_result = result.root
             messages = []
             for m in prompt_result.messages:
                 role = Role.ROLE_USER if m.role == "user" else Role.ROLE_ASSISTANT
-                
-                messages.append(PromptMessage(
-                    role=role,
-                    content=self._convert_content_to_proto(m.content)
-                ))
-                
-            return GetPromptResponse(
-                description=prompt_result.description or "",
-                messages=messages
-            )
+
+                messages.append(PromptMessage(role=role, content=self._convert_content_to_proto(m.content)))
+
+            return GetPromptResponse(description=prompt_result.description or "", messages=messages)
         return GetPromptResponse()
 
     async def Complete(self, request, context):
@@ -856,26 +912,20 @@ class McpGrpcServicer(McpServiceServicer):
             ref = types.PromptReference(name=request.prompt_ref.name)
         else:
             ref = types.ResourceTemplateReference(uri=request.resource_template_ref.uri)
-            
+
         req = types.CompleteRequest(
             params=types.CompleteRequestParams(
-                ref=ref,
-                argument=types.CompletionArgument(
-                    name=request.argument_name,
-                    value=request.argument_value
-                )
+                ref=ref, argument=types.CompletionArgument(name=request.argument_name, value=request.argument_value)
             )
         )
-        
+
         result = await self._execute_handler(types.CompleteRequest, req, context)
-        
+
         if isinstance(result, types.ServerResult):
             comp_result = result.root.completion
             return CompleteResponse(
                 completion=CompletionResult(
-                    values=comp_result.values,
-                    total=comp_result.total or 0,
-                    has_more=comp_result.hasMore or False
+                    values=comp_result.values, total=comp_result.total or 0, has_more=comp_result.hasMore or False
                 )
             )
         return CompleteResponse()
@@ -899,6 +949,61 @@ class McpGrpcServicer(McpServiceServicer):
                 "StreamPromptCompletion handler not registered",
             )
 
+    async def _handle_session_initialize(
+        self,
+        request,
+        context,
+        *,
+        session: GrpcServerSession,
+    ) -> InitializeResponse:
+        """Handle Initialize within a Session, updating the session's client params."""
+        # Populate session with client params
+        roots_cap = None
+        if request.capabilities.HasField("roots"):
+            roots_cap = types.RootsCapability(listChanged=request.capabilities.roots.list_changed)
+
+        sampling_cap = None
+        if request.capabilities.HasField("sampling"):
+            sampling_cap = types.SamplingCapability()
+
+        experimental_cap = None
+        if request.capabilities.HasField("experimental"):
+            experimental_cap = dict(request.capabilities.experimental.capabilities.items())
+
+        session._client_params = types.InitializeRequestParams(
+            protocolVersion=request.protocol_version,
+            capabilities=types.ClientCapabilities(
+                roots=roots_cap,
+                sampling=sampling_cap,
+                experimental=experimental_cap,
+            ),
+            clientInfo=types.Implementation(
+                name=request.client_info.name,
+                version=request.client_info.version,
+            ),
+        )
+
+        init_opts = self._server.create_initialization_options()
+
+        caps = ServerCapabilities()
+        if init_opts.capabilities.prompts:
+            caps.prompts.list_changed = init_opts.capabilities.prompts.listChanged or False
+        if init_opts.capabilities.resources:
+            caps.resources.subscribe = init_opts.capabilities.resources.subscribe or False
+            caps.resources.list_changed = init_opts.capabilities.resources.listChanged or False
+        if init_opts.capabilities.tools:
+            caps.tools.list_changed = init_opts.capabilities.tools.listChanged or False
+
+        return InitializeResponse(
+            protocol_version=types.LATEST_PROTOCOL_VERSION,
+            server_info=ServerInfo(
+                name=init_opts.server_name,
+                version=init_opts.server_version,
+            ),
+            capabilities=caps,
+            instructions=init_opts.instructions or "",
+        )
+
     async def _handle_session_list_tools(
         self,
         request,
@@ -908,11 +1013,7 @@ class McpGrpcServicer(McpServiceServicer):
         session: GrpcServerSession,
     ) -> None:
         req = types.ListToolsRequest(params=types.PaginatedRequestParams(cursor=None))
-        meta = (
-            self._convert_request_meta(request.list_tools.meta)
-            if request.list_tools.HasField("meta")
-            else None
-        )
+        meta = self._convert_request_meta(request.list_tools.meta) if request.list_tools.HasField("meta") else None
         result = await self._execute_handler_for_session(
             types.ListToolsRequest,
             req,
@@ -925,9 +1026,7 @@ class McpGrpcServicer(McpServiceServicer):
                 await self._session_emit(
                     response_queue,
                     request_id,
-                    list_tools=ListToolsResponse(
-                        tool=self._convert_tool_to_proto(tool)
-                    ),
+                    list_tools=ListToolsResponse(tool=self._convert_tool_to_proto(tool)),
                 )
             await self._session_emit(
                 response_queue,
@@ -952,9 +1051,7 @@ class McpGrpcServicer(McpServiceServicer):
     ) -> None:
         req = types.ListResourcesRequest(params=types.PaginatedRequestParams(cursor=None))
         meta = (
-            self._convert_request_meta(request.list_resources.meta)
-            if request.list_resources.HasField("meta")
-            else None
+            self._convert_request_meta(request.list_resources.meta) if request.list_resources.HasField("meta") else None
         )
         result = await self._execute_handler_for_session(
             types.ListResourcesRequest,
@@ -968,9 +1065,7 @@ class McpGrpcServicer(McpServiceServicer):
                 await self._session_emit(
                     response_queue,
                     request_id,
-                    list_resources=ListResourcesResponse(
-                        resource=self._convert_resource_to_proto(resource)
-                    ),
+                    list_resources=ListResourcesResponse(resource=self._convert_resource_to_proto(resource)),
                 )
             await self._session_emit(
                 response_queue,
@@ -993,9 +1088,7 @@ class McpGrpcServicer(McpServiceServicer):
         response_queue: asyncio.Queue[SessionResponse],
         session: GrpcServerSession,
     ) -> None:
-        req = types.ListResourceTemplatesRequest(
-            params=types.PaginatedRequestParams(cursor=None)
-        )
+        req = types.ListResourceTemplatesRequest(params=types.PaginatedRequestParams(cursor=None))
         meta = (
             self._convert_request_meta(request.list_resource_templates.meta)
             if request.list_resource_templates.HasField("meta")
@@ -1044,11 +1137,7 @@ class McpGrpcServicer(McpServiceServicer):
         session: GrpcServerSession,
     ) -> None:
         req = types.ListPromptsRequest(params=types.PaginatedRequestParams(cursor=None))
-        meta = (
-            self._convert_request_meta(request.list_prompts.meta)
-            if request.list_prompts.HasField("meta")
-            else None
-        )
+        meta = self._convert_request_meta(request.list_prompts.meta) if request.list_prompts.HasField("meta") else None
         result = await self._execute_handler_for_session(
             types.ListPromptsRequest,
             req,
@@ -1061,9 +1150,7 @@ class McpGrpcServicer(McpServiceServicer):
                 await self._session_emit(
                     response_queue,
                     request_id,
-                    list_prompts=ListPromptsResponse(
-                        prompt=self._convert_prompt_to_proto(prompt)
-                    ),
+                    list_prompts=ListPromptsResponse(prompt=self._convert_prompt_to_proto(prompt)),
                 )
             await self._session_emit(
                 response_queue,
@@ -1118,9 +1205,7 @@ class McpGrpcServicer(McpServiceServicer):
         queue = session.register_resource_watch(patterns)
         try:
             if request.watch_resources.include_initial:
-                req = types.ListResourcesRequest(
-                    params=types.PaginatedRequestParams(cursor=None)
-                )
+                req = types.ListResourcesRequest(params=types.PaginatedRequestParams(cursor=None))
                 result = await self._execute_handler_for_session(
                     types.ListResourcesRequest,
                     req,
@@ -1168,6 +1253,7 @@ class McpGrpcServicer(McpServiceServicer):
         *,
         request_id: str,
         response_queue: asyncio.Queue[SessionResponse],
+        session: GrpcServerSession,
     ) -> None:
         arguments = dict(request.stream_prompt_completion.arguments)
         try:
@@ -1199,8 +1285,10 @@ class McpGrpcServicer(McpServiceServicer):
 
     async def Session(self, request_iterator, context):
         """Handle bidirectional Session stream with explicit StreamEnd signals."""
+        # Create a dedicated session for this connection.
+        # Client should send Initialize first to set up capabilities.
+        # If they don't, capability checks will return False.
         session = GrpcServerSession()
-        session._client_params = self._session._client_params
         response_queue: asyncio.Queue[SessionResponse] = asyncio.Queue()
         active_tasks: dict[str, asyncio.Task[None]] = {}
         stop_sentinel: object = object()
@@ -1211,7 +1299,11 @@ class McpGrpcServicer(McpServiceServicer):
 
             try:
                 if payload_type == "initialize":
-                    response = await self.Initialize(request.initialize, context)
+                    response = await self._handle_session_initialize(
+                        request.initialize,
+                        context,
+                        session=session,
+                    )
                     await self._session_emit(
                         response_queue,
                         request_id,
@@ -1300,6 +1392,7 @@ class McpGrpcServicer(McpServiceServicer):
                         request,
                         request_id=request_id,
                         response_queue=response_queue,
+                        session=session,
                     )
                 else:
                     await self._emit_stream_error(
@@ -1342,7 +1435,8 @@ class McpGrpcServicer(McpServiceServicer):
                 active_tasks[request.message_id] = task
 
             if active_tasks:
-                await asyncio.gather(*active_tasks.values(), return_exceptions=True)
+                # Copy values to avoid race with tasks removing themselves
+                await asyncio.gather(*list(active_tasks.values()), return_exceptions=True)
             await response_queue.put(stop_sentinel)  # type: ignore[arg-type]
 
         producer = asyncio.create_task(consume_requests())
@@ -1357,31 +1451,29 @@ class McpGrpcServicer(McpServiceServicer):
 
 
 async def start_grpc_server(
-    server: Server,
-    address: str = "[::]:50051",
-    ssl_key_chain: tuple[bytes, bytes] | None = None
+    server: Server, address: str = "[::]:50051", ssl_key_chain: tuple[bytes, bytes] | None = None
 ) -> grpc.aio.Server:
     """
     Start a gRPC server serving the given MCP server instance.
-    
+
     Args:
         server: The MCP server instance (from mcp.server.lowlevel.server)
         address: The address to bind to (default: "[::]:50051")
         ssl_key_chain: Optional (private_key, certificate_chain) for SSL/TLS
-        
+
     Returns:
         The started grpc.aio.Server instance.
     """
     grpc_server = grpc.aio.server()
     servicer = McpGrpcServicer(server)
     add_McpServiceServicer_to_server(servicer, grpc_server)
-    
+
     if ssl_key_chain:
         server_credentials = grpc.ssl_server_credentials([ssl_key_chain])
         grpc_server.add_secure_port(address, server_credentials)
     else:
         grpc_server.add_insecure_port(address)
-        
+
     logger.info("Starting MCP gRPC server on %s", address)
     await grpc_server.start()
     return grpc_server
