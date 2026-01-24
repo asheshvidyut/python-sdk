@@ -218,6 +218,15 @@ class McpGrpcServicer(McpServiceServicer):
     def __init__(self, server: Server[Any, Any]):
         self._server = server
         self._session = GrpcServerSession()
+        self._peer_sessions: dict[str, GrpcServerSession] = {}
+
+    def _get_peer_session(self, context: grpc.ServicerContext) -> GrpcServerSession:
+        peer = context.peer() or "unknown"
+        session = self._peer_sessions.get(peer)
+        if session is None:
+            session = GrpcServerSession()
+            self._peer_sessions[peer] = session
+        return session
 
     # -------------------------------------------------------------------------
     # Type Conversion Helpers
@@ -354,6 +363,7 @@ class McpGrpcServicer(McpServiceServicer):
         context: grpc.ServicerContext,
         *,
         meta: types.RequestParams.Meta | None = None,
+        session: GrpcServerSession | None = None,
     ) -> Any:
         """
         Execute a registered handler for the given request type.
@@ -363,13 +373,14 @@ class McpGrpcServicer(McpServiceServicer):
         if not handler:
             await context.abort(grpc.StatusCode.UNIMPLEMENTED, f"Method {request_type.__name__} not implemented")
         else:
+            active_session = session or self._get_peer_session(context)
             # Set up request context
             # We use a unique ID for each request
             token = request_ctx.set(
                 RequestContext(
                     request_id=str(uuid.uuid4()),
                     meta=meta,
-                    session=self._session,
+                    session=active_session,
                     lifespan_context={},
                 )
             )
@@ -429,7 +440,8 @@ class McpGrpcServicer(McpServiceServicer):
         if request.capabilities.HasField("experimental"):
             experimental_cap = dict(request.capabilities.experimental.capabilities.items())
 
-        self._session._client_params = types.InitializeRequestParams(
+        session = self._get_peer_session(context)
+        session._client_params = types.InitializeRequestParams(
             protocolVersion=request.protocol_version,
             capabilities=types.ClientCapabilities(
                 roots=roots_cap,
@@ -837,7 +849,8 @@ class McpGrpcServicer(McpServiceServicer):
     async def WatchResources(self, request, context):
         """Stream resource change notifications."""
         patterns = list(request.uri_patterns)
-        queue = self._session.register_resource_watch(patterns)
+        session = self._get_peer_session(context)
+        queue = session.register_resource_watch(patterns)
 
         try:
             if request.include_initial:
@@ -870,7 +883,7 @@ class McpGrpcServicer(McpServiceServicer):
                 except asyncio.CancelledError:
                     break
         finally:
-            self._session.unregister_resource_watch(queue)
+            session.unregister_resource_watch(queue)
 
     async def ListPrompts(self, request, context):
         """
@@ -1303,6 +1316,15 @@ class McpGrpcServicer(McpServiceServicer):
             payload_type = request.WhichOneof("payload")
 
             try:
+                if payload_type != "initialize" and session._client_params is None:
+                    await self._emit_stream_error(
+                        response_queue,
+                        request_id,
+                        code=types.INVALID_REQUEST,
+                        message="Session not initialized",
+                    )
+                    return
+
                 if payload_type == "initialize":
                     response = await self._handle_session_initialize(
                         request.initialize,
