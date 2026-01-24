@@ -99,6 +99,8 @@ packages = ["src/mcp"]
 [tool.pyright]
 typeCheckingMode = "strict"
 include = ["src/mcp", "tests", "examples/servers", "examples/snippets"]
+# Exclude gRPC module - relies on untyped protobuf-generated code
+exclude = ["src/mcp/server/grpc", "src/mcp/v1", "tests/server/grpc"]
 venvPath = "."
 venv = ".venv"
 # The FastAPI style of using decorators in tests gives a `reportUnusedFunction` error.

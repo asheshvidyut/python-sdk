@@ -1301,6 +1301,176 @@ class McpGrpcServicer(McpServiceServicer):
                 message="StreamPromptCompletion handler not registered",
             )
 
+    async def _handle_session_ping(
+        self,
+        request,
+        context,
+        *,
+        request_id: str,
+        response_queue: asyncio.Queue[SessionResponse],
+        session: GrpcServerSession,
+    ) -> None:
+        response = await self.Ping(request.ping, context)
+        await self._session_emit(response_queue, request_id, ping=response)
+
+    async def _handle_session_call_tool(
+        self,
+        request,
+        context,
+        *,
+        request_id: str,
+        response_queue: asyncio.Queue[SessionResponse],
+        session: GrpcServerSession,
+    ) -> None:
+        response = await self.CallTool(request.call_tool, context)
+        await self._session_emit(response_queue, request_id, call_tool=response)
+
+    async def _handle_session_read_resource(
+        self,
+        request,
+        context,
+        *,
+        request_id: str,
+        response_queue: asyncio.Queue[SessionResponse],
+        session: GrpcServerSession,
+    ) -> None:
+        response = await self.ReadResource(request.read_resource, context)
+        await self._session_emit(response_queue, request_id, read_resource=response)
+
+    async def _handle_session_get_prompt(
+        self,
+        request,
+        context,
+        *,
+        request_id: str,
+        response_queue: asyncio.Queue[SessionResponse],
+        session: GrpcServerSession,
+    ) -> None:
+        response = await self.GetPrompt(request.get_prompt, context)
+        await self._session_emit(response_queue, request_id, get_prompt=response)
+
+    async def _handle_session_complete(
+        self,
+        request,
+        context,
+        *,
+        request_id: str,
+        response_queue: asyncio.Queue[SessionResponse],
+        session: GrpcServerSession,
+    ) -> None:
+        response = await self.Complete(request.complete, context)
+        await self._session_emit(response_queue, request_id, complete=response)
+
+    async def _await_session_init(
+        self,
+        session: GrpcServerSession,
+        initialize_task: asyncio.Task[None] | None,
+        response_queue: asyncio.Queue[SessionResponse],
+        request_id: str,
+    ) -> bool:
+        """
+        Wait for session initialization if needed.
+
+        Returns True if initialized, False if error was emitted.
+        """
+        if session._client_params is not None:
+            return True
+
+        if initialize_task is None:
+            await self._emit_stream_error(
+                response_queue,
+                request_id,
+                code=types.INVALID_REQUEST,
+                message="Session not initialized",
+            )
+            return False
+
+        try:
+            await initialize_task
+        except BaseException:
+            # Initialization failed or was cancelled.
+            pass
+
+        if session._client_params is None:
+            await self._emit_stream_error(
+                response_queue,
+                request_id,
+                code=types.INVALID_REQUEST,
+                message="Session not initialized",
+            )
+            return False
+
+        return True
+
+    async def _dispatch_session_request(
+        self,
+        request,
+        context,
+        *,
+        request_id: str,
+        response_queue: asyncio.Queue[SessionResponse],
+        session: GrpcServerSession,
+    ) -> None:
+        """Dispatch a session request to the appropriate handler."""
+        payload_type = request.WhichOneof("payload")
+
+        # Map payload types to handler methods
+        handlers = {
+            "ping": self._handle_session_ping,
+            "call_tool": self._handle_session_call_tool,
+            "read_resource": self._handle_session_read_resource,
+            "get_prompt": self._handle_session_get_prompt,
+            "complete": self._handle_session_complete,
+            "list_tools": self._handle_session_list_tools,
+            "list_resources": self._handle_session_list_resources,
+            "list_resource_templates": self._handle_session_list_resource_templates,
+            "list_prompts": self._handle_session_list_prompts,
+            "read_resource_chunked": self._handle_session_read_resource_chunked,
+            "watch_resources": self._handle_session_watch_resources,
+            "stream_prompt_completion": self._handle_session_stream_prompt_completion,
+        }
+
+        handler = handlers.get(payload_type)
+        if handler is None:
+            await self._emit_stream_error(
+                response_queue,
+                request_id,
+                code=types.METHOD_NOT_FOUND,
+                message=f"Unsupported session payload: {payload_type}",
+            )
+            return
+
+        # Handlers have varying signatures; call with appropriate args
+        if payload_type == "stream_prompt_completion":
+            await handler(
+                request,
+                request_id=request_id,
+                response_queue=response_queue,
+            )
+        elif payload_type in ("list_tools", "list_resources", "list_resource_templates", "list_prompts"):
+            await handler(
+                request,
+                request_id=request_id,
+                response_queue=response_queue,
+                session=session,
+            )
+        elif payload_type == "watch_resources":
+            await handler(
+                request,
+                request_id=request_id,
+                response_queue=response_queue,
+                session=session,
+            )
+        else:
+            # Handlers that need context
+            await handler(
+                request,
+                context,
+                request_id=request_id,
+                response_queue=response_queue,
+                session=session,
+            )
+
     async def Session(self, request_iterator, context):
         """Handle bidirectional Session stream with explicit StreamEnd signals."""
         # Create a dedicated session for this connection.
@@ -1317,130 +1487,24 @@ class McpGrpcServicer(McpServiceServicer):
             payload_type = request.WhichOneof("payload")
 
             try:
-                if payload_type != "initialize" and session._client_params is None:
-                    if initialize_task is None:
-                        await self._emit_stream_error(
-                            response_queue,
-                            request_id,
-                            code=types.INVALID_REQUEST,
-                            message="Session not initialized",
-                        )
-                        return
-                    try:
-                        await initialize_task
-                    except Exception:
-                        # Initialization emits its own error response.
-                        pass
-                    if session._client_params is None:
-                        await self._emit_stream_error(
-                            response_queue,
-                            request_id,
-                            code=types.INVALID_REQUEST,
-                            message="Session not initialized",
-                        )
-                        return
-
                 if payload_type == "initialize":
                     response = await self._handle_session_initialize(
                         request.initialize,
                         context,
                         session=session,
                     )
-                    await self._session_emit(
-                        response_queue,
-                        request_id,
-                        initialize=response,
-                    )
-                elif payload_type == "ping":
-                    response = await self.Ping(request.ping, context)
-                    await self._session_emit(
-                        response_queue,
-                        request_id,
-                        ping=response,
-                    )
-                elif payload_type == "call_tool":
-                    response = await self.CallTool(request.call_tool, context)
-                    await self._session_emit(
-                        response_queue,
-                        request_id,
-                        call_tool=response,
-                    )
-                elif payload_type == "read_resource":
-                    response = await self.ReadResource(request.read_resource, context)
-                    await self._session_emit(
-                        response_queue,
-                        request_id,
-                        read_resource=response,
-                    )
-                elif payload_type == "get_prompt":
-                    response = await self.GetPrompt(request.get_prompt, context)
-                    await self._session_emit(
-                        response_queue,
-                        request_id,
-                        get_prompt=response,
-                    )
-                elif payload_type == "complete":
-                    response = await self.Complete(request.complete, context)
-                    await self._session_emit(
-                        response_queue,
-                        request_id,
-                        complete=response,
-                    )
-                elif payload_type == "list_tools":
-                    await self._handle_session_list_tools(
-                        request,
-                        request_id=request_id,
-                        response_queue=response_queue,
-                        session=session,
-                    )
-                elif payload_type == "list_resources":
-                    await self._handle_session_list_resources(
-                        request,
-                        request_id=request_id,
-                        response_queue=response_queue,
-                        session=session,
-                    )
-                elif payload_type == "list_resource_templates":
-                    await self._handle_session_list_resource_templates(
-                        request,
-                        request_id=request_id,
-                        response_queue=response_queue,
-                        session=session,
-                    )
-                elif payload_type == "list_prompts":
-                    await self._handle_session_list_prompts(
-                        request,
-                        request_id=request_id,
-                        response_queue=response_queue,
-                        session=session,
-                    )
-                elif payload_type == "read_resource_chunked":
-                    await self._handle_session_read_resource_chunked(
+                    await self._session_emit(response_queue, request_id, initialize=response)
+                else:
+                    if not await self._await_session_init(
+                        session, initialize_task, response_queue, request_id
+                    ):
+                        return
+                    await self._dispatch_session_request(
                         request,
                         context,
                         request_id=request_id,
                         response_queue=response_queue,
                         session=session,
-                    )
-                elif payload_type == "watch_resources":
-                    await self._handle_session_watch_resources(
-                        request,
-                        request_id=request_id,
-                        response_queue=response_queue,
-                        session=session,
-                    )
-                elif payload_type == "stream_prompt_completion":
-                    await self._handle_session_stream_prompt_completion(
-                        request,
-                        request_id=request_id,
-                        response_queue=response_queue,
-                    )
-                else:
-                    await self._emit_stream_error(
-                        response_queue,
-                        request_id,
-                        code=types.METHOD_NOT_FOUND,
-                        message=f"Unsupported session payload: {payload_type}",
                     )
             except Exception as exc:
                 logger.exception("Session handler error")
