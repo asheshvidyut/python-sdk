@@ -99,6 +99,14 @@ message Metadata {
   map<string, string> annotations = 1;
 }
 
+// Request metadata for correlation and tracing.
+// Provides parity with JSON-RPC metadata since gRPC metadata is out-of-band.
+message RequestMeta {
+  string trace_id = 1;       // Distributed tracing ID (e.g., OpenTelemetry)
+  string correlation_id = 2; // Application-level correlation
+  map<string, string> extra = 3;
+}
+
 message ProgressToken {
   oneof token {
     string string_token = 1;
@@ -108,6 +116,12 @@ message ProgressToken {
 
 message Cursor {
   string value = 1;
+}
+
+// Signals completion of a streaming operation within the Session stream.
+// Required because the Session stream stays open across multiple operations.
+message StreamEnd {
+  string request_id = 1;  // Correlates to the original request's message_id
 }
 
 // Role in a conversation
@@ -207,11 +221,16 @@ message ToolAnnotations {
 }
 
 message ListToolsRequest {
-  // No cursor needed for streaming
+  // Streaming eliminates cursor need, but hints help bridge to cursor-based transports
+  int32 page_size_hint = 1;  // 0 = server default; helps limit memory when bridging
+  RequestMeta meta = 2;
 }
 
 message ListToolsResponse {
-  Tool tool = 1;
+  oneof payload {
+    Tool tool = 1;
+    StreamEnd end = 2;  // Signals no more tools; required for Session stream
+  }
 }
 
 // Unary tool call
@@ -235,8 +254,11 @@ message CallToolWithProgressRequest {
 message CallToolWithProgressResponse {
   oneof update {
     ProgressNotification progress = 1;
-    ToolResult result = 2;
+    ToolResult result = 2;      // Final result; presence signals stream completion
+    StreamError error = 3;      // Error during execution; also signals completion
   }
+  // Note: The stream ends when either `result` or `error` is sent.
+  // Progress notifications may continue until that point.
 }
 
 // Streaming tool calls (parallel execution)
@@ -244,12 +266,23 @@ message StreamToolCallsRequest {
   string request_id = 1;  // Correlate request/response in stream
   string name = 2;
   google.protobuf.Struct arguments = 3;
+  RequestMeta meta = 4;
 }
 
 message StreamToolCallsResponse {
   string request_id = 1;  // Correlates with request
-  repeated Content content = 2;
-  bool is_error = 3;
+  oneof result {
+    ToolResult success = 2;
+    StreamError error = 3;  // Structured error with MCP error semantics
+  }
+}
+
+// Structured error for streaming operations.
+// gRPC status alone is insufficient when multiple logical calls share one stream.
+message StreamError {
+  int32 code = 1;           // MCP error code (aligned with JSON-RPC error codes)
+  string message = 2;
+  google.protobuf.Any data = 3;
 }
 
 // Tool result (used in streaming responses)
@@ -283,13 +316,18 @@ message TextContent {
   string text = 1;
 }
 
+// Note: data is base64-encoded string for JSON-RPC parity.
+// While proto could use `bytes` directly (more efficient), we keep base64
+// to maintain semantic equivalence with MCP JSON-RPC payloads.
+// For large binary data, prefer ReadResourceChunked which uses native bytes.
 message ImageContent {
-  string data = 1;      // Base64 encoded
+  string data = 1;      // Base64 encoded for JSON-RPC compatibility
   string mime_type = 2;
 }
 
+// See ImageContent note on base64 encoding rationale.
 message AudioContent {
-  string data = 1;      // Base64 encoded
+  string data = 1;      // Base64 encoded for JSON-RPC compatibility
   string mime_type = 2;
 }
 
@@ -323,19 +361,27 @@ message ResourceTemplate {
 }
 
 message ListResourcesRequest {
-  // No cursor needed
+  int32 page_size_hint = 1;  // 0 = server default
+  RequestMeta meta = 2;
 }
 
 message ListResourcesResponse {
-  Resource resource = 1;
+  oneof payload {
+    Resource resource = 1;
+    StreamEnd end = 2;  // Signals no more resources
+  }
 }
 
 message ListResourceTemplatesRequest {
-  // No cursor needed
+  int32 page_size_hint = 1;  // 0 = server default
+  RequestMeta meta = 2;
 }
 
 message ListResourceTemplatesResponse {
-  ResourceTemplate resource_template = 1;
+  oneof payload {
+    ResourceTemplate resource_template = 1;
+    StreamEnd end = 2;  // Signals no more templates
+  }
 }
 
 // Unary resource read
@@ -415,11 +461,15 @@ message PromptArgument {
 }
 
 message ListPromptsRequest {
-  // No cursor needed
+  int32 page_size_hint = 1;  // 0 = server default
+  RequestMeta meta = 2;
 }
 
 message ListPromptsResponse {
-  Prompt prompt = 1;
+  oneof payload {
+    Prompt prompt = 1;
+    StreamEnd end = 2;  // Signals no more prompts
+  }
 }
 
 // Unary prompt get
@@ -486,6 +536,16 @@ message CompletionResult {
 // =============================================================================
 // Bidirectional Session Messages
 // =============================================================================
+//
+// The Session RPC multiplexes multiple operations over a single stream.
+// Unlike direct RPCs where stream termination signals completion,
+// Session stays open across operations. Therefore:
+//
+// - Unary operations: Single response with matching `in_reply_to`
+// - List operations: Multiple responses, terminated by StreamEnd
+// - Watch operations: Continuous until CancelRequest or error
+//
+// Clients correlate responses via `in_reply_to` matching request `message_id`.
 
 // Request wrapper for bidirectional session stream
 message SessionRequest {
@@ -518,7 +578,7 @@ message SessionResponse {
   string in_reply_to = 2;  // References the request message_id
 
   oneof payload {
-    // Responses
+    // Responses (unary operations)
     InitializeResponse initialize = 10;
     PingResponse ping = 11;
     ListToolsResponse list_tools = 12;
@@ -530,14 +590,18 @@ message SessionResponse {
     CompleteResponse complete = 18;
     ListResourceTemplatesResponse list_resource_templates = 19;
 
-    // Streaming data (server-initiated)
+    // Streaming data (server-initiated, multiple per request)
     ReadResourceChunkedResponse resource_chunk = 50;
     WatchResourcesResponse resource_notification = 51;
     ProgressNotification progress = 52;
     StreamPromptCompletionResponse completion_chunk = 53;
 
+    // Stream control signals
+    StreamEnd stream_end = 55;  // Signals completion of a multi-response operation
+
     // Errors
     ErrorResponse error = 60;
+    StreamError stream_error = 61;  // Error within a streaming operation
   }
 }
 

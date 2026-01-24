@@ -113,6 +113,38 @@ sequenceDiagram
 
 The bridge is the only component that understands both protocols.
 
+## Stream Termination Semantics
+
+The unified streaming interface must signal completion consistently across transports:
+
+| Signal | gRPC (direct RPC) | gRPC (Session stream) | JSON-RPC (via adapter) |
+|--------|-------------------|----------------------|------------------------|
+| Success | Server closes stream | `StreamEnd` message | `nextCursor = null` |
+| Error | gRPC status code | `StreamError` message | Exception from RPC |
+| Cancellation | Client cancels stream | `CancelRequest` message | Stop requesting pages |
+
+For the bidirectional `Session` stream, explicit `StreamEnd` messages are required because the stream stays open across multiple operations:
+
+```protobuf
+message ListToolsResponse {
+  oneof payload {
+    Tool tool = 1;
+    StreamEnd end = 2;  // Signals no more tools for this request
+  }
+}
+```
+
+## Backpressure Behavior
+
+Backpressure handling differs fundamentally between transports:
+
+| Transport | Backpressure | Behavior |
+|-----------|--------------|----------|
+| gRPC | Native (HTTP/2 flow control) | Server automatically slows if client can't keep up |
+| JSON-RPC | None (request-response) | Client controls pace by when it requests next page |
+
+This is an inherent transport difference. The streaming adapter preserves gRPC's backpressure end-to-end. For cursor-based transports, "backpressure" is implicit in the client's cursor request timing.
+
 ## Compatibility of the Bridge Approach
 
 ### Compatibility Matrix
@@ -134,9 +166,14 @@ We get the best of both worlds: native streaming and backward compatibility.
 
 ## Benefits of bridging approach
 
-1. **gRPC gets native streaming** - no buffering overhead
-2. **JSON-RPC unchanged** - cursor pagination continues working
+1. **gRPC gets native streaming** - no buffering overhead, real backpressure
+2. **JSON-RPC unchanged** - cursor pagination continues working, wire protocol identical
 3. **Application code is uniform** - same interface regardless of transport
 4. **Opt-in complexity** - only bridge deployments need to understand both
 5. **Future-proof** - new streaming transports plug in without SDK changes
 
+## Related
+
+- [Proto Definition](proto/mcp/v1/mcp.proto) - gRPC service with stream termination semantics
+- [Proto README](proto/README.md) - Design decisions and implementation notes
+- [Google Cloud Blog](https://cloud.google.com/blog/products/networking/grpc-as-a-native-transport-for-mcp) - Original gRPC for MCP proposal

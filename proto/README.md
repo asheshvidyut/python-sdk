@@ -136,67 +136,101 @@ The core protocol is stable and implemented in the Python SDK's `GrpcClientTrans
 - [Original gRPC Proposal](https://cloud.google.com/blog/products/networking/grpc-as-a-native-transport-for-mcp)
 - [gRPC Documentation](https://grpc.io/docs/)
 
-## Open Questions
+## Design Decisions
 
-
-
-### Pagination vs. Streaming vs. Limits
-
-
+### Streaming over Pagination
 
 In HTTP/JSON-RPC, paginating large lists (like `ListTools` or `ListResources`) is standard practice to manage payload sizes. gRPC offers native streaming (`stream Tool`), which allows the server to yield items one by one.
 
+**Decision:** Streaming is the primary API for gRPC. List request messages include an optional `page_size_hint` field to help bridges limit memory when translating to cursor-based transports.
 
+### Stream Termination Semantics
 
-**Design Decision:** We have opted for **Streaming** over Pagination in the V1 gRPC definitions.
+For direct streaming RPCs (e.g., `ListTools`), stream termination signals completion. However, the bidirectional `Session` stream stays open across multiple operations, requiring explicit completion signals.
 
-- **Pros:** Simpler API (no cursors), lower latency (process items as they arrive), no "page size" guessing.
+**Solution:** List responses use `oneof { Tool tool; StreamEnd end; }` pattern:
 
-- **Cons:** "Give me just the first 10" requires the client to explicitly close the stream after 10 items.
-
-
-
-**Question:** Should we add an optional `limit` field to Request messages to allow the server to stop generating early, optimizing server-side work? Or rely on client cancellation?
-
-### ClientStreamingTransportSession Interface
-
-The current `ClientTransportSession` interface returns complete results (e.g., `ListToolsResult` with a full list). For gRPC, this means buffering the entire stream into memory before returning, which works but loses the memory efficiency benefits of streaming.
-
-**Proposed:** Add a `ClientStreamingTransportSession` interface that extends `ClientTransportSession`:
-
-```python
-class ClientTransportSession(ABC):
-    # Existing - returns complete results (backward compat)
-    async def list_tools(...) -> ListToolsResult
-
-class ClientStreamingTransportSession(ClientTransportSession):
-    # Adds streaming variants
-    def stream_list_tools(self) -> AsyncIterator[Tool]
-    def stream_list_resources(self) -> AsyncIterator[Resource]
-    def stream_list_prompts(self) -> AsyncIterator[Prompt]
-    async def call_tool_with_progress(...) -> AsyncIterator[ProgressNotification | ToolResult]
+```protobuf
+message ListToolsResponse {
+  oneof payload {
+    Tool tool = 1;
+    StreamEnd end = 2;  // Signals no more tools
+  }
+}
 ```
 
-**Benefits:**
-- gRPC transport implements both - callers choose based on their needs
-- `list_tools()` for simple use cases, `stream_list_tools()` for memory-efficient processing
-- Existing code using `ClientTransportSession` continues to work unchanged
-- HTTP/JSON-RPC transports implement only the base interface
+| Operation Type | Completion Signal |
+|---------------|-------------------|
+| Direct streaming RPC | Server closes stream |
+| Session list operation | `StreamEnd` message with matching `request_id` |
+| Session watch operation | Continues until `CancelRequest` or error |
+| Tool with progress | `ToolResult` or `StreamError` in response |
 
-**Question:** Is this the right abstraction? Should streaming be opt-in via a separate interface, or should we change the base interface to always return iterators?
+### Backpressure Behavior
+
+| Transport | Backpressure | Behavior |
+|-----------|--------------|----------|
+| gRPC | Native (HTTP/2 flow control) | Server slows if client can't keep up |
+| JSON-RPC | None (request-response) | Client controls pace via cursor requests |
+
+This is an inherent transport difference, not a bug. Applications needing backpressure should use gRPC or similar streaming transports.
+
+### Streaming Adapter Pattern
+
+For interoperability between streaming (gRPC) and cursor-based (JSON-RPC) transports, we use a transparent tunneling layer. See [README-MCP-TUNNELING-PROPOSAL.md](../README-MCP-TUNNELING-PROPOSAL.md) for details.
+
+```python
+class StreamingAdapter:
+    async def stream_list_tools(self) -> AsyncIterator[Tool]:
+        if isinstance(transport, GrpcTransport):
+            # Native streaming - pass through
+            async for tool in transport._stream_list_tools_native():
+                yield tool
+        else:
+            # Cursor-based - iterate pages internally
+            cursor = None
+            while True:
+                result = await transport.list_tools(cursor=cursor)
+                for tool in result.tools:
+                    yield tool
+                if not result.nextCursor:
+                    break
+                cursor = result.nextCursor
+```
 
 ## Implementation Notes
 
-
-
 ### True Streaming vs. Buffering
 
-
-
-While the gRPC transport layer fully supports streaming (yielding `ListToolsResponse` or `ReadResourceChunkedResponse` messages individually), the current Python SDK `Server` implementation primarily operates with buffered lists.
-
-
+While the gRPC transport layer fully supports streaming, the current Python SDK `Server` implementation primarily operates with buffered lists.
 
 *   **List Operations:** Handlers for `list_tools`, `list_resources`, etc., typically return a full `list[...]`. The gRPC transport iterates over this list to stream responses, meaning the latency benefit is "transport-only" rather than "end-to-end" until the core `Server` supports async generators.
 
 *   **Resource Reading:** Similarly, `read_resource` handlers currently return the complete content. The gRPC transport chunks this content *after* it has been fully loaded into memory. True zero-copy streaming from disk/network to the gRPC stream will require updates to the `Server` class to support yielding data chunks directly.
+
+### Binary Content Encoding
+
+`ImageContent` and `AudioContent` use base64-encoded strings rather than native `bytes`:
+
+```protobuf
+message ImageContent {
+  string data = 1;      // Base64 encoded for JSON-RPC compatibility
+  string mime_type = 2;
+}
+```
+
+**Rationale:** Maintains semantic equivalence with MCP JSON-RPC payloads. For large binary data, prefer `ReadResourceChunked` which uses native `bytes` for efficiency.
+
+### Request Metadata
+
+All list and streaming requests include optional `RequestMeta` for correlation and tracing:
+
+```protobuf
+message RequestMeta {
+  string trace_id = 1;       // OpenTelemetry trace ID
+  string correlation_id = 2; // Application-level correlation
+  map<string, string> extra = 3;
+}
+```
+
+This provides parity with JSON-RPC metadata since gRPC metadata is out-of-band.
