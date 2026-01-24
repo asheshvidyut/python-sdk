@@ -14,7 +14,7 @@ The streaming is cosmetic - it happens at the transport layer but provides no me
 
 ## Transparent Tunneling
 
-Make streaming the internal abstraction while maintaining full backward compatibility. Non-streaming transports remain unaware of the streaming layer.
+Make streaming the internal abstraction while maintaining backward compatibility. Non-streaming transports remain unaware of the streaming layer.
 
 ```mermaid
 graph TB
@@ -161,19 +161,17 @@ This is an inherent transport difference. The streaming adapter preserves gRPC's
 | New application code | Optional | Hidden | None |
 | Cross-protocol Bridge | Yes | Yes | **New** |
 
-### Non-breaking change
+### Backward Compatibility
 
-Given the success of the current MCP protocol, it is important to note that this proposal does not change the JSON-RPC wire protocol.  Cursor pagination would remain the same. All current servers and clients running wouldn't need to be updated. This does not force the concept of streaming to the non-streaming MCP calls. It is fully backward compatible.
+This proposal does not change the JSON-RPC wire protocol. Cursor pagination remains the same. Existing servers and clients do not need updates. Streaming is additive—it does not affect non-streaming MCP calls.
 
-We get the best of both worlds: native streaming and backward compatibility.
+## Summary
 
-## Benefits of bridging approach
-
-1. **gRPC gets native streaming** - no buffering overhead, real backpressure
+1. **gRPC uses native streaming** - no buffering, HTTP/2 backpressure
 2. **JSON-RPC unchanged** - cursor pagination continues working, wire protocol identical
-3. **Application code is uniform** - same interface regardless of transport
-4. **Opt-in complexity** - only bridge deployments need to understand both
-5. **Future-proof** - new streaming transports plug in without SDK changes
+3. **Uniform application interface** - same API regardless of transport
+4. **Complexity is isolated** - only bridge deployments need to understand both protocols
+5. **Extensible** - new streaming transports can be added without SDK changes
 
 ## Related
 

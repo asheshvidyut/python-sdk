@@ -1,6 +1,6 @@
-# MCP gRPC: High-Performance Transport
+# MCP gRPC Transport
 
-This directory contains the Protocol Buffer definitions for the Model Context Protocol (MCP) as a native gRPC service. This provides an alternative to HTTP/1.1 that addresses its limitations: lack of streaming, JSON's type safety issues, memory footprint, and processing speed.
+This directory contains the Protocol Buffer definitions for MCP as a gRPC service. This provides an alternative to HTTP/1.1 that addresses its limitations: lack of streaming, JSON's type safety issues, memory footprint, and processing speed.
 
 ## Why gRPC for MCP?
 
@@ -20,14 +20,14 @@ graph LR
     end
 ```
 
-In addition to a streaming transport layer, this proposal also introduces a tunneling layer to support interoperability between streaming and cursor-based transports.  This would allow for backward compatibility as well as running of a streaming protobuf.  Please read [README-MCP-TUNNELING-PROPOSAL.md](README-MCP-TUNNELING-PROPOSAL.md) for details.
+This proposal also introduces a tunneling layer for interoperability between streaming and cursor-based transports. See [README-MCP-TUNNELING-PROPOSAL.md](README-MCP-TUNNELING-PROPOSAL.md) for details.
 
-### Key Improvements
+### Differences from JSON-RPC
 
-*   **Native Bidirectional Streaming**: Replaces SSE and long-polling with a single, persistent HTTP/2 stream for interleaved requests, progress updates, and server notifications.
-*   **Binary Efficiency**: Protobuf serialization is typically 10x smaller and significantly faster than JSON, especially when handling large blobs or many small tool calls.
-*   **Zero-Copy Intent**: By using native `bytes` for resource data, we avoid the overhead of Base64 encoding required by JSON-RPC.
-*   **Native Backpressure**: Leverages HTTP/2 flow control to ensure servers aren't overwhelmed by fast clients (and vice versa).
+*   **Bidirectional Streaming**: Replaces SSE and long-polling with a persistent HTTP/2 stream for interleaved requests, progress updates, and server notifications.
+*   **Binary Serialization**: Protobuf is ~10x smaller and faster to parse than JSON, especially for large blobs or many small tool calls.
+*   **Native Bytes**: Uses `bytes` for resource data instead of Base64 encoding.
+*   **Flow Control**: HTTP/2 flow control prevents servers from being overwhelmed by fast clients (and vice versa).
 
 ---
 
@@ -78,7 +78,7 @@ service McpService {
   rpc CallTool(CallToolRequest) returns (CallToolResponse);
   rpc CallToolWithProgress(...) returns (stream CallToolWithProgressResponse);
 
-  // Resources: Efficient handling of large datasets
+  // Resources: Large resource streaming
   rpc ReadResourceChunked(...) returns (stream ReadResourceChunkedResponse);
   rpc WatchResources(...) returns (stream WatchResourcesResponse);
 
@@ -87,11 +87,11 @@ service McpService {
 }
 ```
 
-### Discoveries from Implementation
+### Implementation Notes
 
-1.  **Implicit Chunking**: In our Python implementation, `read_resource` now defaults to the chunked streaming RPC under the hood. This ensures that even massive resources (like large logs or database exports) don't cause memory spikes.
-2.  **Background Watchers**: Resource subscriptions are handled by background stream observers, allowing the client to receive push notifications without blocking the main event loop.
-3.  **Unified Session**: The `Session` RPC acts as a multiplexer. This allows a single TCP connection to handle dozens of concurrent tool calls while simultaneously receiving resource updates.
+1.  **Implicit Chunking**: The Python implementation defaults `read_resource` to the chunked streaming RPC. This prevents memory spikes when reading large resources (logs, database exports, etc.).
+2.  **Background Watchers**: Resource subscriptions use background stream observers, so the client receives push notifications without blocking the main event loop.
+3.  **Unified Session**: The `Session` RPC multiplexes operations. A single TCP connection handles concurrent tool calls while receiving resource updates.
 
 ---
 
@@ -126,7 +126,7 @@ uv add grpcio grpcio-tools
 
 ## Status
 
-**Current Status:** `Alpha / Experiemental / RFC`
+**Current Status:** `Alpha / Experimental / RFC`
 
 The core protocol is stable and implemented in the Python SDK's `GrpcClientTransport`. We are actively seeking feedback on the `Session` stream multiplexing patterns before finalizing the V1 specification.
 
@@ -180,7 +180,7 @@ message SessionResponse {
 | gRPC | Native (HTTP/2 flow control) | Server slows if client can't keep up |
 | JSON-RPC | None (request-response) | Client controls pace via cursor requests |
 
-This is an inherent transport difference, not a bug. Applications needing backpressure should use gRPC or similar streaming transports.
+This is an inherent transport difference. Applications requiring backpressure should use gRPC or similar streaming transports.
 
 ### Streaming Adapter Pattern
 
@@ -209,11 +209,11 @@ class StreamingAdapter:
 
 ### True Streaming vs. Buffering
 
-While the gRPC transport layer fully supports streaming, the current Python SDK `Server` implementation primarily operates with buffered lists.
+The gRPC transport layer supports streaming, but the current Python SDK `Server` implementation operates with buffered lists.
 
 *   **List Operations:** Handlers for `list_tools`, `list_resources`, etc., typically return a full `list[...]`. The gRPC transport iterates over this list to stream responses, meaning the latency benefit is "transport-only" rather than "end-to-end" until the core `Server` supports async generators.
 
-*   **Resource Reading:** Similarly, `read_resource` handlers currently return the complete content. The gRPC transport chunks this content *after* it has been fully loaded into memory. True zero-copy streaming from disk/network to the gRPC stream will require updates to the `Server` class to support yielding data chunks directly.
+*   **Resource Reading:** Similarly, `read_resource` handlers currently return complete content. The gRPC transport chunks this content *after* loading it into memory. Zero-copy streaming from disk/network to the gRPC stream requires updates to the `Server` class to yield data chunks directly.
 
 ### Binary Content Encoding
 
