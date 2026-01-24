@@ -121,7 +121,7 @@ The unified streaming interface must signal completion consistently across trans
 |--------|-------------------|----------------------|------------------------|
 | Success | Server closes stream | `SessionResponse.stream_end` | `nextCursor = null` |
 | Error | gRPC status code | `SessionResponse.stream_error` | Exception from RPC |
-| Cancellation | Client cancels stream | `CancelRequest` (matching `message_id`) | Stop requesting pages |
+| Cancellation | Client cancels stream | `CancelRequest` (`request_id` == `message_id`) | Stop requesting pages |
 
 For the bidirectional `Session` stream, explicit `StreamEnd` messages are required because the stream stays open across multiple operations:
 
@@ -132,7 +132,7 @@ message SessionResponse {
 
   oneof payload {
     ListToolsResponse list_tools = 12;
-    StreamEnd stream_end = 55;  // Signals completion of a multi-response operation
+    StreamEnd stream_end = 55;  // Signals completion; StreamEnd.request_id must match in_reply_to
   }
 }
 ```
