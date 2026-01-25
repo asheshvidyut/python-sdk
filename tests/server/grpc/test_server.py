@@ -1,16 +1,16 @@
 
-import asyncio
+import grpc
 import pytest
 from pydantic import AnyUrl
-from mcp.server.lowlevel.server import Server
+
+import mcp.types as types
 from mcp.client.grpc import GrpcClientTransport
 from mcp.server.grpc import start_grpc_server
-import mcp.types as types
 from mcp.server.lowlevel.helper_types import ReadResourceContents
-
-import grpc
+from mcp.server.lowlevel.server import Server
 from mcp.v1.mcp_pb2 import InitializeRequest, ListToolsRequest, SessionRequest
 from mcp.v1.mcp_pb2_grpc import McpServiceStub
+
 
 @pytest.mark.anyio
 async def test_grpc_server_end_to_end():
@@ -48,9 +48,9 @@ async def test_grpc_server_end_to_end():
     async def list_resources() -> list[types.Resource]:
         return [
             types.Resource(
-                uri=AnyUrl("file:///test/resource.txt"),
+                uri="file:///test/resource.txt",
                 name="test_resource",
-                mimeType="text/plain"
+                mime_type="text/plain"
             )
         ]
 
@@ -103,7 +103,7 @@ async def test_grpc_server_end_to_end():
         async with GrpcClientTransport(address) as client:
             # Test Initialize
             init_res = await client.initialize()
-            assert init_res.serverInfo.name == "test-grpc-server"
+            assert init_res.server_info.name == "test-grpc-server"
             
             # Test List Tools (Streaming)
             tools_res = await client.list_tools()
@@ -131,7 +131,7 @@ async def test_grpc_server_end_to_end():
             # Test Error (Tool not found)
             # MCP returns error as result, not exception
             error_res = await client.call_tool("non_existent_tool", {})
-            assert error_res.isError is True
+            assert error_res.is_error is True
             assert "Unknown tool" in error_res.content[0].text
 
             # Ensure connection is still healthy after an error

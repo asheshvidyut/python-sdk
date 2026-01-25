@@ -1,5 +1,4 @@
-"""
-gRPC server transport for MCP.
+"""gRPC server transport for MCP.
 
 This module implements the server-side gRPC transport for MCP, allowing
 an MCP server to be exposed over gRPC with support for native streaming
@@ -21,12 +20,12 @@ import grpc
 from google.protobuf import struct_pb2
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.timestamp_pb2 import Timestamp
-from pydantic import AnyUrl
 
 import mcp.types as types
 from mcp.server.lowlevel.server import Server, request_ctx
 from mcp.server.transport_session import ServerTransportSession
 from mcp.shared.context import RequestContext
+from mcp.shared.message import SessionMessage
 from mcp.v1.mcp_pb2 import (
     CallToolResponse,
     CallToolWithProgressResponse,
@@ -77,8 +76,7 @@ RequestT = TypeVar("RequestT")
 
 
 class GrpcServerSession(ServerTransportSession):
-    """
-    gRPC implementation of ServerTransportSession.
+    """gRPC implementation of ServerTransportSession.
 
     This session implementation handles the context for gRPC requests,
     bridging the gap between the abstract ServerSession interface and
@@ -108,7 +106,7 @@ class GrpcServerSession(ServerTransportSession):
         if capability.roots is not None:
             if client_caps.roots is None:
                 return False
-            if capability.roots.listChanged and not client_caps.roots.listChanged:
+            if capability.roots.list_changed and not client_caps.roots.list_changed:
                 return False
 
         if capability.sampling is not None:
@@ -153,7 +151,7 @@ class GrpcServerSession(ServerTransportSession):
         # or the Session stream. If called from a unary context, we log warning.
         logger.warning("Progress notification dropped (not implemented for unary gRPC): %s", progress)
 
-    async def send_resource_updated(self, uri: AnyUrl) -> None:
+    async def send_resource_updated(self, uri: str) -> None:
         if not self._resource_watchers:
             return
 
@@ -183,6 +181,10 @@ class GrpcServerSession(ServerTransportSession):
         logger.warning("List roots request dropped (not implemented for unary gRPC)")
         return types.ListRootsResult(roots=[])
 
+    async def send_message(self, message: SessionMessage) -> None:
+        """Send a raw session message."""
+        logger.warning("Send message dropped (not implemented for unary gRPC): %s", message)
+
     async def elicit(
         self,
         message: str,
@@ -190,6 +192,25 @@ class GrpcServerSession(ServerTransportSession):
         related_request_id: types.RequestId | None = None,
     ) -> types.ElicitResult:
         raise NotImplementedError("Elicitation not implemented for unary gRPC")
+
+    async def elicit_form(
+        self,
+        message: str,
+        requested_schema: types.ElicitRequestedSchema,
+        related_request_id: types.RequestId | None = None,
+    ) -> types.ElicitResult:
+        """Send a form mode elicitation/create request."""
+        raise NotImplementedError("Form elicitation not implemented for unary gRPC")
+
+    async def elicit_url(
+        self,
+        message: str,
+        url: str,
+        elicitation_id: str,
+        related_request_id: types.RequestId | None = None,
+    ) -> types.ElicitResult:
+        """Send a URL mode elicitation/create request."""
+        raise NotImplementedError("URL elicitation not implemented for unary gRPC")
 
     async def send_ping(self) -> types.EmptyResult:
         logger.warning("Ping request dropped (not implemented for unary gRPC)")
@@ -211,8 +232,7 @@ class GrpcServerSession(ServerTransportSession):
 
 
 class McpGrpcServicer(McpServiceServicer):
-    """
-    Implements the McpService gRPC definition by delegating to an MCP Server instance.
+    """Implements the McpService gRPC definition by delegating to an MCP Server instance.
     """
 
     def __init__(self, server: Server[Any, Any]):
@@ -252,14 +272,14 @@ class McpGrpcServicer(McpServiceServicer):
         if isinstance(content, types.TextContent):
             return Content(text=TextContent(text=content.text))
         elif isinstance(content, types.ImageContent):
-            return Content(image=ImageContent(data=content.data, mime_type=content.mimeType))
+            return Content(image=ImageContent(data=content.data, mime_type=content.mime_type))
         # TODO: Handle EmbeddedResource
         return Content()
 
     def _convert_tool_to_proto(self, tool: types.Tool) -> Any:
         """Convert MCP Tool to proto Tool."""
         return Tool(
-            name=tool.name, description=tool.description or "", input_schema=self._dict_to_struct(tool.inputSchema)
+            name=tool.name, description=tool.description or "", input_schema=self._dict_to_struct(tool.input_schema)
         )
 
     def _convert_resource_to_proto(self, resource: types.Resource) -> Any:
@@ -268,7 +288,7 @@ class McpGrpcServicer(McpServiceServicer):
             uri=str(resource.uri),
             name=resource.name,
             description=resource.description or "",
-            mime_type=resource.mimeType or "",
+            mime_type=resource.mime_type or "",
         )
 
     def _convert_prompt_to_proto(self, prompt: types.Prompt) -> Any:
@@ -365,8 +385,7 @@ class McpGrpcServicer(McpServiceServicer):
         meta: types.RequestParams.Meta | None = None,
         session: GrpcServerSession | None = None,
     ) -> Any:
-        """
-        Execute a registered handler for the given request type.
+        """Execute a registered handler for the given request type.
         Sets up the request context needed by the handler.
         """
         handler = self._server.request_handlers.get(request_type)
@@ -430,7 +449,7 @@ class McpGrpcServicer(McpServiceServicer):
         # Populate session with client params
         roots_cap = None
         if request.capabilities.HasField("roots"):
-            roots_cap = types.RootsCapability(listChanged=request.capabilities.roots.list_changed)
+            roots_cap = types.RootsCapability(list_changed=request.capabilities.roots.list_changed)
 
         sampling_cap = None
         if request.capabilities.HasField("sampling"):
@@ -442,7 +461,7 @@ class McpGrpcServicer(McpServiceServicer):
 
         session = self._get_peer_session(context)
         session._client_params = types.InitializeRequestParams(
-            protocolVersion=request.protocol_version,
+            protocol_version=request.protocol_version,
             capabilities=types.ClientCapabilities(
                 roots=roots_cap,
                 sampling=sampling_cap,
@@ -464,12 +483,12 @@ class McpGrpcServicer(McpServiceServicer):
         # Convert internal ServerCapabilities to proto ServerCapabilities
         caps = ServerCapabilities()
         if init_opts.capabilities.prompts:
-            caps.prompts.list_changed = init_opts.capabilities.prompts.listChanged or False
+            caps.prompts.list_changed = init_opts.capabilities.prompts.list_changed or False
         if init_opts.capabilities.resources:
             caps.resources.subscribe = init_opts.capabilities.resources.subscribe or False
-            caps.resources.list_changed = init_opts.capabilities.resources.listChanged or False
+            caps.resources.list_changed = init_opts.capabilities.resources.list_changed or False
         if init_opts.capabilities.tools:
-            caps.tools.list_changed = init_opts.capabilities.tools.listChanged or False
+            caps.tools.list_changed = init_opts.capabilities.tools.list_changed or False
 
         return InitializeResponse(
             protocol_version=types.LATEST_PROTOCOL_VERSION,
@@ -484,8 +503,7 @@ class McpGrpcServicer(McpServiceServicer):
         return PingResponse()
 
     async def ListTools(self, request, context):
-        """
-        List available tools.
+        """List available tools.
 
         Note: The underlying Server implementation currently collects all tools
         into a list before returning. While we stream the response to the client,
@@ -497,8 +515,8 @@ class McpGrpcServicer(McpServiceServicer):
         result = await self._execute_handler(types.ListToolsRequest, req, context, meta=meta)
 
         if isinstance(result, types.ServerResult):
-            # result.root is ListToolsResult
-            tools_result = result.root
+            # result is ListToolsResult
+            tools_result = result
             for tool in tools_result.tools:
                 yield ListToolsResponse(tool=self._convert_tool_to_proto(tool))
 
@@ -511,9 +529,9 @@ class McpGrpcServicer(McpServiceServicer):
         result = await self._execute_handler(types.CallToolRequest, req, context)
 
         if isinstance(result, types.ServerResult):
-            call_result = result.root
+            call_result = result
             return CallToolResponse(
-                content=[self._convert_content_to_proto(c) for c in call_result.content], is_error=call_result.isError
+                content=[self._convert_content_to_proto(c) for c in call_result.content], is_error=call_result.is_error
             )
         return CallToolResponse(is_error=True)
 
@@ -593,11 +611,11 @@ class McpGrpcServicer(McpServiceServicer):
                     return
 
                 if isinstance(result, types.ServerResult):
-                    call_result = result.root
+                    call_result = result
                     yield CallToolWithProgressResponse(
                         result=ToolResult(
                             content=[self._convert_content_to_proto(c) for c in call_result.content],
-                            is_error=call_result.isError,
+                            is_error=call_result.is_error,
                         )
                     )
             finally:
@@ -608,8 +626,7 @@ class McpGrpcServicer(McpServiceServicer):
                     yield progress_queue.get_nowait()
 
     async def StreamToolCalls(self, request_iterator, context):
-        """
-        Stream multiple tool calls with parallel execution.
+        """Stream multiple tool calls with parallel execution.
 
         Client streams tool call requests, server streams results as they complete.
         Results may arrive in different order than requests.
@@ -624,13 +641,13 @@ class McpGrpcServicer(McpServiceServicer):
                 result = await self._execute_handler(types.CallToolRequest, req, context)
 
                 if isinstance(result, types.ServerResult):
-                    call_result = result.root
+                    call_result = result
                     await response_queue.put(
                         StreamToolCallsResponse(
                             request_id=request_id,
                             success=ToolResult(
                                 content=[self._convert_content_to_proto(c) for c in call_result.content],
-                                is_error=call_result.isError,
+                                is_error=call_result.is_error,
                             ),
                         )
                     )
@@ -685,8 +702,7 @@ class McpGrpcServicer(McpServiceServicer):
                 task.cancel()
 
     async def ListResources(self, request, context):
-        """
-        List resources.
+        """List resources.
 
         Note: Currently buffers all resources from the Server handler.
         Future optimization: Support async iterators in Server handlers.
@@ -701,13 +717,12 @@ class McpGrpcServicer(McpServiceServicer):
         )
 
         if isinstance(result, types.ServerResult):
-            res_result = result.root
+            res_result = result
             for r in res_result.resources:
                 yield ListResourcesResponse(resource=self._convert_resource_to_proto(r))
 
     async def ListResourceTemplates(self, request, context):
-        """
-        List resource templates.
+        """List resource templates.
 
         Note: Currently buffers results from the Server handler.
         """
@@ -721,27 +736,27 @@ class McpGrpcServicer(McpServiceServicer):
         )
 
         if isinstance(result, types.ServerResult):
-            res_result = result.root
-            for t in res_result.resourceTemplates:
+            res_result = result
+            for t in res_result.resource_templates:
                 yield ListResourceTemplatesResponse(
                     resource_template=ResourceTemplate(
                         uri_template=t.uriTemplate,
                         name=t.name,
                         description=t.description or "",
-                        mime_type=t.mimeType or "",
+                        mime_type=t.mime_type or "",
                     )
                 )
 
     async def ReadResource(self, request, context):
         """Read a resource."""
-        req = types.ReadResourceRequest(params=types.ReadResourceRequestParams(uri=AnyUrl(request.uri)))
+        req = types.ReadResourceRequest(params=types.ReadResourceRequestParams(uri=(request.uri)))
         result = await self._execute_handler(types.ReadResourceRequest, req, context)
 
         if isinstance(result, types.ServerResult):
-            read_result = result.root
+            read_result = result
             contents = []
             for c in read_result.contents:
-                msg = ResourceContents(uri=str(c.uri), mime_type=c.mimeType or "")
+                msg = ResourceContents(uri=str(c.uri), mime_type=c.mime_type or "")
                 if isinstance(c, types.TextResourceContents):
                     msg.text = c.text
                 elif isinstance(c, types.BlobResourceContents):
@@ -752,8 +767,7 @@ class McpGrpcServicer(McpServiceServicer):
         return ReadResourceResponse()
 
     async def ReadResourceChunked(self, request, context):
-        """
-        Read a resource in chunks.
+        """Read a resource in chunks.
 
         Note: The underlying read_resource handler currently returns the full content
         (or a full list of contents), which we then chunk. True streaming from the
@@ -777,7 +791,7 @@ class McpGrpcServicer(McpServiceServicer):
         session: GrpcServerSession,
         use_session: bool,
     ) -> AsyncIterator[ReadResourceChunkedResponse]:
-        req = types.ReadResourceRequest(params=types.ReadResourceRequestParams(uri=AnyUrl(request.uri)))
+        req = types.ReadResourceRequest(params=types.ReadResourceRequestParams(uri=(request.uri)))
 
         # We reuse the standard ReadResource handler
         # Note: Ideally the handler would support yielding chunks, but for now
@@ -793,10 +807,10 @@ class McpGrpcServicer(McpServiceServicer):
             result = await self._execute_handler(types.ReadResourceRequest, req, context)
 
         if isinstance(result, types.ServerResult):
-            read_result = result.root
+            read_result = result
             for c in read_result.contents:
                 uri = str(c.uri)
-                mime_type = c.mimeType or ""
+                mime_type = c.mime_type or ""
 
                 if isinstance(c, types.TextResourceContents):
                     text = c.text
@@ -859,7 +873,7 @@ class McpGrpcServicer(McpServiceServicer):
                 if isinstance(result, types.ServerResult):
                     timestamp = Timestamp()
                     timestamp.FromDatetime(datetime.now(timezone.utc))
-                    for resource in result.root.resources:
+                    for resource in result.resources:
                         uri_value = str(resource.uri)
                         if any(fnmatch(uri_value, pattern) for pattern in patterns):
                             yield WatchResourcesResponse(
@@ -886,8 +900,7 @@ class McpGrpcServicer(McpServiceServicer):
             session.unregister_resource_watch(queue)
 
     async def ListPrompts(self, request, context):
-        """
-        List prompts.
+        """List prompts.
 
         Note: Currently buffers results from the Server handler.
         """
@@ -901,7 +914,7 @@ class McpGrpcServicer(McpServiceServicer):
         )
 
         if isinstance(result, types.ServerResult):
-            prompts_result = result.root
+            prompts_result = result
             for p in prompts_result.prompts:
                 yield ListPromptsResponse(prompt=self._convert_prompt_to_proto(p))
 
@@ -913,7 +926,7 @@ class McpGrpcServicer(McpServiceServicer):
         result = await self._execute_handler(types.GetPromptRequest, req, context)
 
         if isinstance(result, types.ServerResult):
-            prompt_result = result.root
+            prompt_result = result
             messages = []
             for m in prompt_result.messages:
                 role = Role.ROLE_USER if m.role == "user" else Role.ROLE_ASSISTANT
@@ -941,7 +954,7 @@ class McpGrpcServicer(McpServiceServicer):
         result = await self._execute_handler(types.CompleteRequest, req, context)
 
         if isinstance(result, types.ServerResult):
-            comp_result = result.root.completion
+            comp_result = result.completion
             return CompleteResponse(
                 completion=CompletionResult(
                     values=comp_result.values, total=comp_result.total or 0, has_more=comp_result.hasMore or False
@@ -979,7 +992,7 @@ class McpGrpcServicer(McpServiceServicer):
         # Populate session with client params
         roots_cap = None
         if request.capabilities.HasField("roots"):
-            roots_cap = types.RootsCapability(listChanged=request.capabilities.roots.list_changed)
+            roots_cap = types.RootsCapability(list_changed=request.capabilities.roots.list_changed)
 
         sampling_cap = None
         if request.capabilities.HasField("sampling"):
@@ -990,7 +1003,7 @@ class McpGrpcServicer(McpServiceServicer):
             experimental_cap = dict(request.capabilities.experimental.capabilities.items())
 
         session._client_params = types.InitializeRequestParams(
-            protocolVersion=request.protocol_version,
+            protocol_version=request.protocol_version,
             capabilities=types.ClientCapabilities(
                 roots=roots_cap,
                 sampling=sampling_cap,
@@ -1006,12 +1019,12 @@ class McpGrpcServicer(McpServiceServicer):
 
         caps = ServerCapabilities()
         if init_opts.capabilities.prompts:
-            caps.prompts.list_changed = init_opts.capabilities.prompts.listChanged or False
+            caps.prompts.list_changed = init_opts.capabilities.prompts.list_changed or False
         if init_opts.capabilities.resources:
             caps.resources.subscribe = init_opts.capabilities.resources.subscribe or False
-            caps.resources.list_changed = init_opts.capabilities.resources.listChanged or False
+            caps.resources.list_changed = init_opts.capabilities.resources.list_changed or False
         if init_opts.capabilities.tools:
-            caps.tools.list_changed = init_opts.capabilities.tools.listChanged or False
+            caps.tools.list_changed = init_opts.capabilities.tools.list_changed or False
 
         return InitializeResponse(
             protocol_version=types.LATEST_PROTOCOL_VERSION,
@@ -1041,7 +1054,7 @@ class McpGrpcServicer(McpServiceServicer):
             session=session,
         )
         if isinstance(result, types.ServerResult):
-            for tool in result.root.tools:
+            for tool in result.tools:
                 await self._session_emit(
                     response_queue,
                     request_id,
@@ -1080,7 +1093,7 @@ class McpGrpcServicer(McpServiceServicer):
             session=session,
         )
         if isinstance(result, types.ServerResult):
-            for resource in result.root.resources:
+            for resource in result.resources:
                 await self._session_emit(
                     response_queue,
                     request_id,
@@ -1121,7 +1134,7 @@ class McpGrpcServicer(McpServiceServicer):
             session=session,
         )
         if isinstance(result, types.ServerResult):
-            for template in result.root.resourceTemplates:
+            for template in result.resource_templates:
                 await self._session_emit(
                     response_queue,
                     request_id,
@@ -1130,7 +1143,7 @@ class McpGrpcServicer(McpServiceServicer):
                             uri_template=template.uriTemplate,
                             name=template.name,
                             description=template.description or "",
-                            mime_type=template.mimeType or "",
+                            mime_type=template.mime_type or "",
                         )
                     ),
                 )
@@ -1165,7 +1178,7 @@ class McpGrpcServicer(McpServiceServicer):
             session=session,
         )
         if isinstance(result, types.ServerResult):
-            for prompt in result.root.prompts:
+            for prompt in result.prompts:
                 await self._session_emit(
                     response_queue,
                     request_id,
@@ -1234,7 +1247,7 @@ class McpGrpcServicer(McpServiceServicer):
                 if isinstance(result, types.ServerResult):
                     timestamp = Timestamp()
                     timestamp.FromDatetime(datetime.now(timezone.utc))
-                    for resource in result.root.resources:
+                    for resource in result.resources:
                         uri_value = str(resource.uri)
                         if any(fnmatch(uri_value, pattern) for pattern in patterns):
                             await self._session_emit(
@@ -1368,8 +1381,7 @@ class McpGrpcServicer(McpServiceServicer):
         response_queue: asyncio.Queue[SessionResponse],
         request_id: str,
     ) -> bool:
-        """
-        Wait for session initialization if needed.
+        """Wait for session initialization if needed.
 
         Returns True if initialized, False if error was emitted.
         """
@@ -1561,8 +1573,7 @@ class McpGrpcServicer(McpServiceServicer):
 async def start_grpc_server(
     server: Server, address: str = "[::]:50051", ssl_key_chain: tuple[bytes, bytes] | None = None
 ) -> grpc.aio.Server:
-    """
-    Start a gRPC server serving the given MCP server instance.
+    """Start a gRPC server serving the given MCP server instance.
 
     Args:
         server: The MCP server instance (from mcp.server.lowlevel.server)

@@ -60,6 +60,7 @@ from mcp.types._types import (
     GetPromptRequest,
     GetPromptRequestParams,
     GetPromptResult,
+    StreamPromptCompletionChunk,
     GetTaskPayloadRequest,
     GetTaskPayloadRequestParams,
     GetTaskPayloadResult,
@@ -232,6 +233,7 @@ __all__ = [
     "SamplingContent",
     "SamplingMessageContentBlock",
     "StopReason",
+    "StreamPromptCompletionChunk",
     "TaskExecutionMode",
     "TaskStatus",
     # Base classes

@@ -33,7 +33,7 @@ class StreamingAdapter:
             )
             for tool in result.tools:
                 yield tool
-            cursor_value = result.nextCursor
+            cursor_value = result.next_cursor
             if cursor_value is None:
                 break
             if current_params is not None:
@@ -49,7 +49,7 @@ class StreamingAdapter:
         params: types.PaginatedRequestParams | None = None,
     ) -> types.ListToolsResult:
         tools = [tool async for tool in self.stream_list_tools(cursor=cursor, params=params)]
-        return types.ListToolsResult(tools=tools, nextCursor=None)
+        return types.ListToolsResult(tools=tools, next_cursor=None)
 
     async def stream_list_resources(
         self,
@@ -67,7 +67,7 @@ class StreamingAdapter:
             result = await self._transport.list_resources(cursor=cursor_value)
             for resource in result.resources:
                 yield resource
-            cursor_value = result.nextCursor
+            cursor_value = result.next_cursor
             if cursor_value is None:
                 break
 
@@ -79,7 +79,7 @@ class StreamingAdapter:
         resources = [
             resource async for resource in self.stream_list_resources(cursor=cursor)
         ]
-        return types.ListResourcesResult(resources=resources, nextCursor=None)
+        return types.ListResourcesResult(resources=resources, next_cursor=None)
 
     async def stream_list_resource_templates(
         self,
@@ -97,7 +97,7 @@ class StreamingAdapter:
             result = await self._transport.list_resource_templates(cursor=cursor_value)
             for template in result.resourceTemplates:
                 yield template
-            cursor_value = result.nextCursor
+            cursor_value = result.next_cursor
             if cursor_value is None:
                 break
 
@@ -112,7 +112,7 @@ class StreamingAdapter:
         ]
         return types.ListResourceTemplatesResult(
             resourceTemplates=templates,
-            nextCursor=None,
+            next_cursor=None,
         )
 
     async def stream_list_prompts(
@@ -131,7 +131,7 @@ class StreamingAdapter:
             result = await self._transport.list_prompts(cursor=cursor_value)
             for prompt in result.prompts:
                 yield prompt
-            cursor_value = result.nextCursor
+            cursor_value = result.next_cursor
             if cursor_value is None:
                 break
 
@@ -141,4 +141,4 @@ class StreamingAdapter:
         cursor: str | None = None,
     ) -> types.ListPromptsResult:
         prompts = [prompt async for prompt in self.stream_list_prompts(cursor=cursor)]
-        return types.ListPromptsResult(prompts=prompts, nextCursor=None)
+        return types.ListPromptsResult(prompts=prompts, next_cursor=None)

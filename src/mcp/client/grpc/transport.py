@@ -1,5 +1,4 @@
-"""
-gRPC transport implementation for MCP client.
+"""gRPC transport implementation for MCP client.
 
 This implements ClientTransportSession using gRPC, providing:
 - Binary protobuf encoding (more efficient than JSON)
@@ -39,8 +38,8 @@ try:
         ListToolsRequest,
         PingRequest,
         PromptRef,
-        RequestMeta,
         ReadResourceChunkedRequest,
+        RequestMeta,
         ResourceTemplateRef,
         SessionRequest,
         SessionResponse,
@@ -56,8 +55,7 @@ logger = logging.getLogger(__name__)
 
 
 class GrpcClientTransport(ClientTransportSession):
-    """
-    gRPC-based MCP client transport.
+    """gRPC-based MCP client transport.
 
     This transport implements the ClientTransportSession interface using gRPC,
     providing efficient binary communication with native streaming support.
@@ -76,8 +74,7 @@ class GrpcClientTransport(ClientTransportSession):
         options: list[tuple[str, Any]] | None = None,
         client_info: types.Implementation | None = None,
     ) -> None:
-        """
-        Initialize gRPC transport.
+        """Initialize gRPC transport.
 
         Args:
             target: gRPC server address (e.g., "localhost:50051")
@@ -258,16 +255,16 @@ class GrpcClientTransport(ClientTransportSession):
         return types.Tool(
             name=proto_tool.name,
             description=proto_tool.description or None,
-            inputSchema=self._struct_to_dict(proto_tool.input_schema),
+            input_schema=self._struct_to_dict(proto_tool.input_schema),
         )
 
     def _convert_resource(self, proto_resource: Any) -> types.Resource:
         """Convert proto Resource to MCP Resource."""
         return types.Resource(
-            uri=AnyUrl(proto_resource.uri),
+            uri=proto_resource.uri,
             name=proto_resource.name,
             description=proto_resource.description or None,
-            mimeType=proto_resource.mime_type or None,
+            mime_type=proto_resource.mime_type or None,
         )
 
     def _convert_prompt(self, proto_prompt: Any) -> types.Prompt:
@@ -296,7 +293,7 @@ class GrpcClientTransport(ClientTransportSession):
             return types.ImageContent(
                 type="image",
                 data=proto_content.image.data,
-                mimeType=proto_content.image.mime_type,
+                mime_type=proto_content.image.mime_type,
             )
         else:
             raise ValueError(f"Unknown content type: {content_type}")
@@ -384,27 +381,27 @@ class GrpcClientTransport(ClientTransportSession):
         # Convert capabilities
         self._server_capabilities = types.ServerCapabilities(
             prompts=types.PromptsCapability(
-                listChanged=response.capabilities.prompts.list_changed
+                list_changed=response.capabilities.prompts.list_changed
             )
             if response.capabilities.HasField("prompts")
             else None,
             resources=types.ResourcesCapability(
                 subscribe=response.capabilities.resources.subscribe,
-                listChanged=response.capabilities.resources.list_changed,
+                list_changed=response.capabilities.resources.list_changed,
             )
             if response.capabilities.HasField("resources")
             else None,
             tools=types.ToolsCapability(
-                listChanged=response.capabilities.tools.list_changed
+                list_changed=response.capabilities.tools.list_changed
             )
             if response.capabilities.HasField("tools")
             else None,
         )
 
         return types.InitializeResult(
-            protocolVersion=response.protocol_version,
+            protocol_version=response.protocol_version,
             capabilities=self._server_capabilities,
-            serverInfo=self._server_info,
+            server_info=self._server_info,
             instructions=response.instructions or None,
         )
 
@@ -461,7 +458,7 @@ class GrpcClientTransport(ClientTransportSession):
 
         return types.ListResourcesResult(
             resources=resources,
-            nextCursor=None,
+            next_cursor=None,
         )
 
     async def list_resource_templates(
@@ -475,7 +472,7 @@ class GrpcClientTransport(ClientTransportSession):
 
         return types.ListResourceTemplatesResult(
             resourceTemplates=templates,
-            nextCursor=None,
+            next_cursor=None,
         )
 
     async def read_resource(self, uri: AnyUrl) -> types.ReadResourceResult:
@@ -506,8 +503,8 @@ class GrpcClientTransport(ClientTransportSession):
             if data["text_chunks"]:
                 result_contents.append(
                     types.TextResourceContents(
-                        uri=AnyUrl(res_uri),
-                        mimeType=data["mime_type"] or None,
+                        uri=(res_uri),
+                        mime_type=data["mime_type"] or None,
                         text="".join(data["text_chunks"]),
                     )
                 )
@@ -516,8 +513,8 @@ class GrpcClientTransport(ClientTransportSession):
                 full_blob = b"".join(data["blob_chunks"])
                 result_contents.append(
                     types.BlobResourceContents(
-                        uri=AnyUrl(res_uri),
-                        mimeType=data["mime_type"] or None,
+                        uri=(res_uri),
+                        mime_type=data["mime_type"] or None,
                         blob=base64.b64encode(full_blob).decode("ascii"),
                     )
                 )
@@ -586,13 +583,13 @@ class GrpcClientTransport(ClientTransportSession):
                     contents = [self._convert_content(c) for c in response.result.content]
                     is_error = response.result.is_error
 
-            return types.CallToolResult(content=contents, isError=is_error)
+            return types.CallToolResult(content=contents, is_error=is_error)
         else:
             # Use simple unary RPC
             response = await stub.CallTool(request, timeout=timeout)
             return types.CallToolResult(
                 content=[self._convert_content(c) for c in response.content],
-                isError=response.is_error,
+                is_error=response.is_error,
             )
 
     async def list_prompts(
@@ -604,7 +601,7 @@ class GrpcClientTransport(ClientTransportSession):
 
         return types.ListPromptsResult(
             prompts=prompts,
-            nextCursor=None,
+            next_cursor=None,
         )
 
     async def get_prompt(
@@ -685,7 +682,7 @@ class GrpcClientTransport(ClientTransportSession):
 
         return types.ListToolsResult(
             tools=tools,
-            nextCursor=None,
+            next_cursor=None,
         )
 
     async def _stream_list_tools_native(
@@ -753,7 +750,7 @@ class GrpcClientTransport(ClientTransportSession):
                     uriTemplate=t.uri_template,
                     name=t.name,
                     description=t.description or None,
-                    mimeType=t.mime_type or None,
+                    mime_type=t.mime_type or None,
                 )
         except grpc.RpcError as e:
             raise self._map_error(e) from e

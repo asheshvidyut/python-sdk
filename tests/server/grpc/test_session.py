@@ -1,14 +1,15 @@
 import asyncio
 
 import pytest
-from pydantic import AnyUrl
 from google.protobuf import struct_pb2
+from pydantic import AnyUrl
 
 import mcp.types as types
 from mcp.server.grpc.server import McpGrpcServicer
 from mcp.server.lowlevel.helper_types import ReadResourceContents
 from mcp.server.lowlevel.server import Server
 from mcp.v1.mcp_pb2 import (
+    CallToolWithProgressRequest,
     CancelRequest,
     ClientInfo,
     InitializeRequest,
@@ -17,7 +18,6 @@ from mcp.v1.mcp_pb2 import (
     SessionRequest,
     StreamPromptCompletionRequest,
     StreamToolCallsRequest,
-    CallToolWithProgressRequest,
     WatchResourcesRequest,
 )
 
@@ -147,9 +147,9 @@ async def test_session_watch_resources_streams_updates():
     async def list_resources() -> list[types.Resource]:
         return [
             types.Resource(
-                uri=AnyUrl("file:///test/resource.txt"),
+                uri="file:///test/resource.txt",
                 name="test_resource",
-                mimeType="text/plain",
+                mime_type="text/plain",
             )
         ]
 
@@ -201,7 +201,7 @@ async def test_watch_resources_rpc_streams_updates():
     task = asyncio.create_task(run_watch())
     await asyncio.sleep(0)
     await servicer._get_peer_session(DummyContext()).send_resource_updated(
-        AnyUrl("file:///watch/file.txt")
+        "file:///watch/file.txt"
     )
     response = await asyncio.wait_for(task, timeout=1.0)
 

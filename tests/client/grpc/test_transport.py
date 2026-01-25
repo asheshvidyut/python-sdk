@@ -1,5 +1,4 @@
-"""
-Tests for gRPC client transport.
+"""Tests for gRPC client transport.
 """
 
 from unittest.mock import AsyncMock, MagicMock
@@ -99,8 +98,8 @@ class TestGrpcTransportFunctionality:
         
         result = await transport.initialize()
         
-        assert result.protocolVersion == "2024-11-05"
-        assert result.serverInfo.name == "test-server"
+        assert result.protocol_version == "2024-11-05"
+        assert result.server_info.name == "test-server"
         assert result.instructions == "Test instructions"
         transport._stub.Initialize.assert_called_once()
 
