@@ -1,0 +1,192 @@
+# MCP Streaming Transport Proposal
+
+## Problem Statement
+
+MCP's current transport architecture uses cursor-based pagination as the primary abstraction. This works well for JSON-RPC transports but forces gRPC implementations into "fake streaming" - buffering complete results before yielding items one-by-one.
+
+| Layer | Current Behavior | Issue |
+|-------|------------------|-------|
+| gRPC Server | `result = handler()` then `for item in result: yield` | Server loads all items into memory before streaming |
+| gRPC Client | `items = []; async for r in stream: items.append(r)` | Client buffers entire stream into list |
+| Interface | `list_tools() -> ListToolsResult` | Forces complete results, no streaming option |
+
+The streaming is cosmetic - it happens at the transport layer but provides no memory or latency benefits end-to-end.
+
+## Transparent Tunneling
+
+Make streaming the internal abstraction while maintaining backward compatibility. Non-streaming transports remain unaware of the streaming layer.
+
+```mermaid
+graph TB
+    subgraph "Application Layer"
+        A1["New code (streaming):<br/><code>async for tool in stream_list_tools()</code>"]
+        A2["Old code (unchanged):<br/><code>result = await list_tools()</code>"]
+    end
+
+    subgraph "Unified Streaming Core"
+        USC["Internally: AsyncIterator&lt;T&gt;<br/>list_tools() buffers stream_list_tools()"]
+    end
+
+    subgraph "Transport Layer"
+        GRPC["gRPC Transport<br/><b>Native streaming</b>"]
+        JSON["JSON-RPC Transport<br/><b>Cursor emulation</b>"]
+    end
+
+    subgraph "Wire Protocol"
+        GRPC_WIRE["HTTP/2 streams<br/><i>UNCHANGED</i>"]
+        JSON_WIRE["Cursor pagination<br/><i>UNCHANGED</i>"]
+    end
+
+    A1 --> USC
+    A2 --> USC
+    USC -->|"NEW ADAPTER<br/>(passes through)"| GRPC
+    USC -->|"NEW ADAPTER<br/>(hides cursors)"| JSON
+    GRPC --> GRPC_WIRE
+    JSON --> JSON_WIRE
+```
+
+## Architecture
+
+### Transport Implementations
+
+| Transport | `stream_list_tools()` Implementation | Overhead |
+|-----------|--------------------------------------|----------|
+| gRPC | `async for resp in stub.ListTools(): yield convert(resp)` | None (native) |
+| JSON-RPC | Iterate cursor pages, yield items from each | Cursor management (hidden) |
+| SSE | Iterate cursor pages, yield items from each | Cursor management (hidden) |
+
+### StreamingAdapter
+
+```python
+class StreamingAdapter:
+    """Provides streaming interface over any transport."""
+
+    def __init__(self, transport: ClientTransportSession):
+        self._transport = transport
+
+    async def stream_list_tools(self) -> AsyncIterator[types.Tool]:
+        if isinstance(self._transport, GrpcClientTransport):
+            # Native streaming - no overhead
+            async for tool in self._transport._stream_list_tools_native():
+                yield tool
+        else:
+            # Cursor-based - iterate pages internally
+            cursor = None
+            while True:
+                result = await self._transport.list_tools(cursor=cursor)
+                for tool in result.tools:
+                    yield tool
+                cursor = result.nextCursor
+                if cursor is None:
+                    break
+
+    async def list_tools(self) -> types.ListToolsResult:
+        """Backward compatible - collects stream into result."""
+        tools = [t async for t in self.stream_list_tools()]
+        return types.ListToolsResult(tools=tools, nextCursor=None)
+```
+
+### Cross-Protocol Bridging
+
+For deployments mixing gRPC and JSON-RPC:
+
+```mermaid
+sequenceDiagram
+    participant C as gRPC Client
+    participant B as Bridge
+    participant S as JSON-RPC Server
+
+    C->>B: ListTools() [stream]
+
+    B->>S: list_tools(cursor=null)
+    S-->>B: {tools: [1,2,3], next: "abc"}
+    B-->>C: Tool 1
+    B-->>C: Tool 2
+    B-->>C: Tool 3
+
+    B->>S: list_tools(cursor="abc")
+    S-->>B: {tools: [4,5], next: null}
+    B-->>C: Tool 4
+    B-->>C: Tool 5
+    B-->>C: [stream ends]
+```
+
+The bridge is the only component that understands both protocols.
+
+## Stream Termination Semantics
+
+The unified streaming interface must signal completion consistently across transports:
+
+| Signal | gRPC (direct RPC) | gRPC (Session stream) | JSON-RPC (via adapter) |
+|--------|-------------------|----------------------|------------------------|
+| Success | Server closes stream | `SessionResponse.stream_end` | `nextCursor = null` |
+| Error | gRPC status code | `SessionResponse.stream_error` | Exception from RPC |
+| Cancellation | Client cancels stream | `CancelRequest` (`request_id` == `message_id`) | Stop requesting pages |
+
+For the bidirectional `Session` stream, explicit `StreamEnd` messages are required because the stream stays open across multiple operations:
+
+```protobuf
+message SessionResponse {
+  string message_id = 1;
+  string in_reply_to = 2;
+
+  oneof payload {
+    ListToolsResponse list_tools = 12;
+    StreamEnd stream_end = 55;  // Signals completion; StreamEnd.request_id must match in_reply_to
+  }
+}
+```
+
+## Backpressure Behavior
+
+Backpressure handling differs fundamentally between transports:
+
+| Transport | Backpressure | Behavior |
+|-----------|--------------|----------|
+| gRPC | Native (HTTP/2 flow control) | Server automatically slows if client can't keep up |
+| JSON-RPC | None (request-response) | Client controls pace by when it requests next page |
+
+This is an inherent transport difference. The streaming adapter preserves gRPC's backpressure end-to-end. For cursor-based transports, "backpressure" is implicit in the client's cursor request timing.
+
+## Transport Capabilities
+
+Streaming is a shared interface, but transports differ in duplex and flow control:
+
+| Transport | Server→Client Streaming | Client→Server Streaming | Duplex | Notes |
+|-----------|-------------------------|-------------------------|--------|-------|
+| gRPC | Yes | Yes | Full | True bidirectional streaming with backpressure |
+| SSE | Yes | No | Half | Server push only; client sends separate requests |
+| JSON-RPC | No | No | None | Cursor pagination emulates streaming |
+
+Adapters and bridges should preserve these realities rather than masking them.
+
+## Compatibility of the Bridge Approach
+
+### Compatibility Matrix
+
+| Component | Knows Streaming? | Knows Cursors? | Changes Required |
+|-----------|------------------|----------------|------------------|
+| gRPC Transport | Yes (native) | No | None |
+| JSON-RPC Transport | No | Yes (native) | None |
+| StreamingAdapter | Yes | Yes | **New** |
+| Old application code | No | Via `list_tools()` | None |
+| New application code | Optional | Hidden | None |
+| Cross-protocol Bridge | Yes | Yes | **New** |
+
+### Backward Compatibility
+
+This proposal does not change the JSON-RPC wire protocol. Cursor pagination remains the same. Existing servers and clients do not need updates. Streaming is additive—it does not affect non-streaming MCP calls.
+
+## Summary
+
+1. **gRPC uses native streaming** - no buffering, HTTP/2 backpressure
+2. **JSON-RPC unchanged** - cursor pagination continues working, wire protocol identical
+3. **Uniform application interface** - same API regardless of transport
+4. **Complexity is isolated** - only bridge deployments need to understand both protocols
+5. **Extensible** - new streaming transports can be added without SDK changes
+
+## Related
+
+- [Proto Definition](mcp/v1/mcp.proto) - gRPC service with stream termination semantics
+- [Proto README](README.md) - Design decisions and implementation notes
+- [Google Cloud Blog](https://cloud.google.com/blog/products/networking/grpc-as-a-native-transport-for-mcp) - Original gRPC for MCP proposal

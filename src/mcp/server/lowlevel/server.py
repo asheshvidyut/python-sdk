@@ -176,6 +176,7 @@ class Server(Generic[LifespanResultT, RequestT]):
         }
         self.notification_handlers: dict[type, Callable[..., Awaitable[None]]] = {}
         self._tool_cache: dict[str, types.Tool] = {}
+        self._stream_prompt_completion_handler: Callable[[str, dict[str, str] | None], Any] | None = None
         self._experimental_handlers: ExperimentalHandlers | None = None
         self._session_manager: StreamableHTTPSessionManager | None = None
         logger.debug("Initializing server %r", name)
@@ -487,6 +488,16 @@ class Server(Generic[LifespanResultT, RequestT]):
                     return types.ListToolsResult(tools=result)
 
             self.request_handlers[types.ListToolsRequest] = handler
+            return func
+
+        return decorator
+
+    def stream_prompt_completion(self):  # pragma: no cover
+        def decorator(
+            func: Callable[[str, dict[str, str] | None], Awaitable[Any] | Any],
+        ):
+            logger.debug("Registering handler for StreamPromptCompletion")
+            self._stream_prompt_completion_handler = func
             return func
 
         return decorator
