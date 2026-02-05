@@ -491,6 +491,19 @@ class FastMCP(Generic[LifespanResultT]):
         """
         return self._mcp_server.completion()
 
+    def stream_prompt_completion(self):
+        """Decorator to register a streaming prompt completion handler.
+
+        The handler receives:
+        - name: Prompt name
+        - arguments: Prompt arguments
+
+        The handler may yield `StreamPromptCompletionChunk`, strings,
+        tuples of (token, is_final, finish_reason), or dicts with
+        token/is_final/finish_reason keys.
+        """
+        return self._mcp_server.stream_prompt_completion()
+
     def add_resource(self, resource: Resource) -> None:
         """Add a resource to the server.
 
